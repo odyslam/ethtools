@@ -1,15 +1,5 @@
-# 👷 `worker-template` Hello World
+# Ethereum Tools
 
-A template for kick starting a Cloudflare worker project.
+Uses cloudflare workers. It's dead simple. I have no idea why nobody else did it first. 
 
-[`index.js`](https://github.com/cloudflare/worker-template/blob/master/index.js) is the content of the Workers script.
-
-#### Wrangler
-
-To generate using [wrangler](https://github.com/cloudflare/wrangler)
-
-```
-wrangler generate projectname https://github.com/cloudflare/worker-template
-```
-
-Further documentation for Wrangler can be found [here](https://developers.cloudflare.com/workers/tooling/wrangler).
+Visit https://tech.odyslam.com for an up-to-date list of the available API endpoints
