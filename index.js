@@ -3,9 +3,18 @@ import { ethers } from 'ethers';
 let defaultHtml = `
 <!DOCTYPE html>
   <body>
-    <p> Various helpful APIs for sovereign individuals and Ethereum afficionados.</p>
+    <p> Various helpful APIs for sovereign individuals and Ethereum afficionados. By odyslam.eth.</p>
+    <p> All functionality uses your metamask provider, without ever having access to sensitive information. The client uses ethers-js.</p>
+    <p> You can easily inspect the source of this webpage to verify just how simple it is. It uses cloudflare workers to generate the HTML based on the URL.</p>
+    <p> <a href="https://github.com/odyslam/ethereum-worker-tools">View on GitHub and leave a star </a></p>
     <p><b>/sign/&lt;message&gt;:</b> Sign an arbitrary message with your web3 wallet (e.g metamask). It will return the signed message.</p>
     <p><b>/verify/&lt;address&gt;/&lt;signed_message&gt;/&lt;message&gt;:</b> Verifies that a signed message originates from the specific address.</p>
+    <p><b>/send/&lt;contract_address&gt;/&lt;function_signature&gt;/&lt;function_arguments&gt;:</b> Execute a smart contract's function by sending a transaction.<br>
+    <b>example:</b> /send/0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb/balanceOf(address,uint256) view returns(uint256)/"0x8DbD1b711DC621e1404633da156FcC779e1c6f3E" 42
+    </p>
+    <p><b>/call/&lt;contract_address&gt;/&lt;function_signature&gt;/&lt;function_arguments&gt;:</b> Call a smart contract's function without sending a transaction. It reads the state of the smart contract without changing the state on the blockchain.<br>
+    <b>example:</b> /send/0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb/balanceOf(address,uint256) view returns(uint256)/"0x8DbD1b711DC621e1404633da156FcC779e1c6f3E" 42
+    </p>
   <body>
 </html>
 `
