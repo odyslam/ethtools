@@ -38,6 +38,62 @@ let signHtml = `
   </body>
 </html>`
 
+let sendHtml = `
+<!DOCTYPE html>
+<script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript"></script>
+  <script>
+  async function sendTransaction(){
+      const enable = await window.ethereum.enable();
+      if(enable){
+        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const signer = provider.getSigner()
+        const contractAddress = "CONTRACT_ADDRESS";
+        const contractABI = ["function FUNCTION_SIGNATURE"];
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
+        let tx_info = await contract.FUNCTION_METHOD(METHOD_ARGUMENTS);
+        let tx_mined = await transaction.wait();
+        document.getElementById("tx_info").innerHTML = tx_info;
+        document.getElementById("tx_wait").innerHTML = tx_mined;
+        }
+      }
+      sendTransaction();
+    </script>
+<h1> Send a Transaction </h1>
+<p>
+  Transaction info: <span id="tx_info"></span> <br>
+  Transaction mined: <span id="tx_wait"></span> <br>
+  </p>
+  </body>
+</html>`
+
+let callHtml= `
+<!DOCTYPE html>
+<script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript"></script>
+  <script>
+  async function callTransaction(){
+      const enable = await window.ethereum.enable();
+      if(enable){
+        const provider = new ethers.providers.Web3Provider(window.ethereum)
+        const contractAddress = "CONTRACT_ADDRESS";
+        const contractABI = ["function FUNCTION_SIGNATURE"];
+        const contract = new ethers.Contract(contractAddress, contractABI, provider);
+        let tx_info = await contract.FUNCTION_METHOD(METHOD_ARGUMENTS);
+        document.getElementById("tx_info").innerHTML = tx_info;
+        }
+      }
+      callTransaction();
+    </script>
+<h1> Call a function</h1>
+<p>
+  Call result: <span id="tx_info"></span> <br>
+  </p>
+  </body>
+</html>
+
+
+`
 
 addEventListener('fetch', event => {
   event.respondWith(handleRequest(event.request))
@@ -63,7 +119,7 @@ async function handleRequest(request) {
     let verified = false;
     let  address = tokens[2];
     let signature = tokens[3];
-    let message = decodeURIComponent(tokens.slice(4).join("")).replaceAll(/"/g, '\\\"');
+    let message = decodeURIComponent(tokens.slice(4).join("")).replaceall(/"/g, '\\\"');
     let signedAddress = ethers.utils.verifyMessage(message, signature);
     if (signedAddress == address){
       verified = true;
@@ -89,6 +145,40 @@ async function handleRequest(request) {
       })
     }
   }
+  else if (pathname.startsWith("/send")) {
+    let tokens = pathname.split('/');
+    let address = tokens[2];
+    let signature = decodeURIComponent(tokens[3]);
+    let args = decodeURIComponent(tokens[4]);
+    args = args.replaceAll(" ", ",");
+    let method = signature.split('(')[0];
+    let input = sendHtml.replaceAll("CONTRACT_ADDRESS", address);
+    input = input.replaceAll("FUNCTION_SIGNATURE", signature);
+    input = input.replaceAll("FUNCTION_METHOD", method);
+    input = input.replaceAll("METHOD_ARGUMENTS", args);
+    return new Response(input, {
+        headers: {
+          "content-type": "text/html;charset=UTF-8",
+        },
+      })
+  }
+  else if (pathname.startsWith("/call")) {
+    let tokens = pathname.split('/');
+    let address = tokens[2];
+    let signature = decodeURIComponent(tokens[3]);
+    let args = decodeURIComponent(tokens[4]);
+    args = args.replaceAll(" ", ",");
+    let method = signature.split('(')[0];
+    let input = callHtml.replaceAll("CONTRACT_ADDRESS", address);
+    input = input.replaceAll("FUNCTION_SIGNATURE", signature);
+    input = input.replaceAll("FUNCTION_METHOD", method);
+    input = input.replaceAll("METHOD_ARGUMENTS", args);
+    return new Response(input, {
+        headers: {
+          "content-type": "text/html;charset=UTF-8",
+        },
+      })
+  }
   else {
     return new Response(defaultHtml, {
             headers: {
@@ -99,3 +189,8 @@ async function handleRequest(request) {
 
 
 }
+function isNumeric(value) {
+    return /^-?\d+$/.test(value);
+}
+
+
