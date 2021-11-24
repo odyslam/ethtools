@@ -1,5 +1,54 @@
 import { ethers } from 'ethers';
 
+let deployHtml = `
+<!DOCTYPE html>
+<script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript"></script>
+  <script>
+  async function deployContract(){
+      const enable = await window.ethereum.enable();
+      if(enable){
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const bytecode = document.getElementById("bc").value;
+        const constructor = document.getElementById("con").value;
+        let args = document.getElementById("args").value;
+        args = args.split(" ");
+        for (let arg in args){
+          if (parseInt(args[arg])){
+            args[arg] = ethers.utils.parseUnits(args[arg]);
+          }
+        }
+        args = args.join(',');
+        const contractABI = [constructor];
+        console.log(contractABI, args, bytecode, signer);
+        const factory = new ethers.ContractFactory(contractABI, bytecode, signer);
+        const contract = await factory.deploy(args);
+        let tx_info = await contract.deployTransaction.wait();
+        document.getElementById("tx_info").innerHTML = tx_info;
+        }
+      }
+    </script>
+<h1> Deploy a smart contract <h1>
+<h3>Bytecode</h3>
+<form>
+  <label for="con">Constructor ABI:</label><br>
+  <label for "con"><i>e.g: constructor(uint totalSupply, uint id, string memory name)</i></label><br>
+  <input type="text" id="con" name="constructor_abi"></br>
+  <label for="args">Constructor Arguments</label><br>
+  <label for "args"><i>e.g: 100 3 "examplooor"></label><br>
+  <input type="text" id="args" name="contractor_args"></br>
+  <label for="bc">Bytecode:</label><br>
+  <input type="text" id="bc" name="bytecode"></br>
+  <input type="button" onclick="deployContract();" value="Deploy!">
+</form>
+<p>
+  Transaction Receipt: <span id="tx_info"></span> <br>
+</p>
+  </body>
+</html>
+`
+
 let defaultHtml = `
 <!DOCTYPE html>
   <body>
@@ -187,6 +236,13 @@ async function handleRequest(request) {
           "content-type": "text/html;charset=UTF-8",
         },
       })
+  }
+  else if (pathname.startsWith("/deploy")) {
+    return new Response(deployHtml, {
+            headers: {
+              "content-type": "text/html;charset=UTF-8",
+            },
+          })
   }
   else {
     return new Response(defaultHtml, {
