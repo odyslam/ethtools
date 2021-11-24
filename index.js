@@ -14,16 +14,17 @@ let deployHtml = `
         const constructor = document.getElementById("con").value;
         let args = document.getElementById("args").value;
         args = args.split(" ");
-        for (let arg in args){
-          if (parseInt(args[arg])){
-            args[arg] = ethers.utils.parseUnits(args[arg]);
-          }
-        }
+//        for (let arg in args){
+//          if (parseInt(args[arg])){
+//            args[arg] = ethers.utils.parseUnits(args[arg]);
+//          }
+//        }
         args = args.join(',');
         const contractABI = [constructor];
         console.log(contractABI, args, bytecode, signer);
         const factory = new ethers.ContractFactory(contractABI, bytecode, signer);
-        const contract = await factory.deploy(args);
+        let command = "factory.deploy(" + args + ")";
+        const contract = await eval(command);
         let tx_info = await contract.deployTransaction.wait();
         document.getElementById("tx_info").innerHTML = tx_info;
         }
@@ -36,7 +37,7 @@ let deployHtml = `
   <label for "con"><i>e.g: constructor(uint totalSupply, uint id, string memory name)</i></label><br>
   <input type="text" id="con" name="constructor_abi"></br>
   <label for="args">Constructor Arguments</label><br>
-  <label for "args"><i>e.g: 100 3 "examplooor"></label><br>
+  <label for "args"><i>e.g: 100 3 "examplooor"</i></label><br>
   <input type="text" id="args" name="contractor_args"></br>
   <label for="bc">Bytecode:</label><br>
   <input type="text" id="bc" name="bytecode"></br>
@@ -52,17 +53,20 @@ let deployHtml = `
 let defaultHtml = `
 <!DOCTYPE html>
   <body>
-    <p> Various helpful APIs for sovereign individuals and Ethereum afficionados. By odyslam.eth.</p>
+    <p> Various helpful APIs for sovereign individuals and Ethereum afficionados. </p>
     <p> All functionality uses your metamask provider, without ever having access to sensitive information. The client uses ethers-js.</p>
     <p> You can easily inspect the source of this webpage to verify just how simple it is. It uses cloudflare workers to generate the HTML based on the URL.</p>
-    <p> <a href="https://github.com/odyslam/ethereum-worker-tools">View on GitHub and leave a star </a></p>
+    <p> <a href="https://github.com/odyslam/ethereum-worker-tools">View on GitHub.</a></p>
     <p><b>/sign/&lt;message&gt;:</b> Sign an arbitrary message with your web3 wallet (e.g metamask). It will return the signed message.</p>
     <p><b>/verify/&lt;address&gt;/&lt;signed_message&gt;/&lt;message&gt;:</b> Verifies that a signed message originates from the specific address.</p>
     <p><b>/send/&lt;contract_address&gt;/&lt;function_signature&gt;/&lt;function_arguments&gt;:</b> Execute a smart contract's function by sending a transaction.<br>
-    <b>example:</b> /send/0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb/balanceOf(address,uint256) view returns(uint256)/"0x8DbD1b711DC621e1404633da156FcC779e1c6f3E" 42
+    <b>example:</b> /send/0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb/safeTransferFrom(address, address, uint256, uint256, bytes)/"0x8DbD1b711DC621e1404633da156FcC779e1c6f3E" "0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc" 42 1 ""
     </p>
     <p><b>/call/&lt;contract_address&gt;/&lt;function_signature&gt;/&lt;function_arguments&gt;:</b> Call a smart contract's function without sending a transaction. It reads the state of the smart contract without changing the state on the blockchain.<br>
-    <b>example:</b> /send/0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb/balanceOf(address,uint256) view returns(uint256)/"0x8DbD1b711DC621e1404633da156FcC779e1c6f3E" 42
+    <b>example:</b> /call/0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb/balanceOf(address,uint256) view returns(uint256)/"0x8DbD1b711DC621e1404633da156FcC779e1c6f3E" 42
+    </p>
+    <p>
+      <b>/deploy:</b> Deploy a smart contract. You will need the constructor signature, constructor arguments and the bytecode of the smart contract.
     </p>
   <body>
 </html>
