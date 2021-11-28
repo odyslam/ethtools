@@ -1,5 +1,9 @@
-# Ethereum Tools
+# Ethtools
 
-Uses cloudflare workers. It's dead simple. I have no idea why nobody else did it first. 
+A cloudflare worker that serves dead simple API to interact with the Ethereum blockchain. 
 
-Visit https://tech.odyslam.com for an up-to-date list of the available API endpoints
+I have no idea why this functionality did not already exist. 
+
+Contributions and suggestions for next features are more than welcome! Just open an issue.
+
+Visit https://ethtools.odyslam.com 
