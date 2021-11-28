@@ -1,5 +1,39 @@
 import { ethers } from 'ethers';
 
+let flashbotsHtml = `
+<!DOCTYPE html>
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
+        type="application/javascript">
+  </script>
+  <script>
+    async function callFlashbots() {}
+  </script>
+  <body>
+    <h1> Create and issue a flashbots bundle! </h1>
+    <h3> Instructions </h3>
+    <p>Target Address: </p>
+    <p>Function Signature </p>
+    <p>Function Arguments </p>
+    <input type="button" onclick="callFlashbots" value="Send Bundle!">
+    <input type="button" onclick="addAnotherTransaction();" value="Add another Transaction">
+    <div id="txDef">
+      <form>
+        <input type="button" onclick="removeDiv(this);" value="Remove tx">
+        <label for="addr">Target Address</label><br>
+        <input type="text" id="addr" name="targetAddress"></br>
+        <label for="fun">function signature</label><br>
+        <input type="text" id="fun" name="functionSignature"></br>
+        <label for="args">Function Arguments</label><br>
+        <input type="text" id="args" name="functionArguments"></br>
+      </form>
+    </div>
+    <h3> Bundle Receipt </h3>
+    <div id="receipt"></div>
+  </body>
+</html>
+`
+
+
 let deployHtml = `
 <!DOCTYPE html>
 <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
