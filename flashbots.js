@@ -29406,6 +29406,16 @@ assert.equal = function assertEqual(l, r, msg) {
 },{"timers":142}],140:[function(require,module,exports){
 "use strict";
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "FlashbotsBundleProvider", {
+  enumerable: true,
+  get: function () {
+    return _ethersProviderBundle.FlashbotsBundleProvider;
+  }
+});
+
 var _ethersProviderBundle = require("@flashbots/ethers-provider-bundle");
 
 },{"@flashbots/ethers-provider-bundle":114}],141:[function(require,module,exports){
