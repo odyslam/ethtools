@@ -2,11 +2,25 @@ import { ethers } from 'ethers';
 
 let flashbotsHtml = `
 <!DOCTYPE html>
-  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"
-        type="application/javascript">
-  </script>
+  <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools@feat/flashbots/flashbots.js"></script>
   <script>
-    async function callFlashbots() {}
+  //TODO:
+  // 1. Add counters to transactions
+  // 2. Add field to enter gas you want to pay
+  // 3. create function to send bundle
+  // 4. Create logic for simple ETH transfers
+  //
+    function removeTx(div){
+      console.log(div);
+      div.remove();
+    }
+
+    function addTx(){
+      let tx = document.getElementById("txDef").children[0];
+      var newTx =  tx.cloneNode(true);
+      document.getElementById("txDef").appendChild(newTx);
+    }
+
   </script>
   <body>
     <h1> Create and issue a flashbots bundle! </h1>
@@ -15,10 +29,13 @@ let flashbotsHtml = `
     <p>Function Signature </p>
     <p>Function Arguments </p>
     <input type="button" onclick="callFlashbots" value="Send Bundle!">
-    <input type="button" onclick="addAnotherTransaction();" value="Add another Transaction">
-    <div id="txDef">
-      <form>
-        <input type="button" onclick="removeDiv(this);" value="Remove tx">
+    <input type="button" onclick="addTx();" value="Add another Transaction">
+    <br>
+    <div id="txDef" style="margin-top: 20px;">
+      <form style="margin-top: 15px;">
+        <p>---------------------------------------------------------</p>
+       <h3> Transaction number <span id="txIndex"></span></h3>
+        <input type="button" onclick="removeTx(this.parentElement);" value="Remove tx">
         <label for="addr">Target Address</label><br>
         <input type="text" id="addr" name="targetAddress"></br>
         <label for="fun">function signature</label><br>
@@ -281,6 +298,13 @@ async function handleRequest(request) {
               "content-type": "text/html;charset=UTF-8",
             },
           })
+  }
+  else if (pathname.startsWith("/flashbots")) {
+    return new Response(flashbotsHtml, {
+        headers: {
+          "content-type": "text/html;charset=UTF-8",
+        },
+    })
   }
   else {
     return new Response(defaultHtml, {
