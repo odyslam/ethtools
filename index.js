@@ -13,14 +13,36 @@ let flashbotsHtml = `
     function removeTx(div){
       console.log(div);
       div.remove();
+      calculateIndex();
     }
 
     function addTx(){
-      let tx = document.getElementById("txDef").children[0];
-      var newTx =  tx.cloneNode(true);
-      document.getElementById("txDef").appendChild(newTx);
+      let str = \`
+      <form class="tx" style="margin-top: 15px;">
+        <p>---------------------------------------------------------</p>
+       <h3> Transaction number <span class="txIndex"></span></h3>
+        <input type="button" onclick="removeTx(this.parentElement);" value="Remove tx">
+        <label for="addr">Target Address</label><br>
+        <input type="text" id="addr" name="targetAddress"></br>
+        <label for="fun">function signature</label><br>
+        <input type="text" id="fun" name="functionSignature"></br>
+        <label for="args">Function Arguments</label><br>
+        <input type="text" id="args" name="functionArguments"></br>
+      </form>
+      \`
+      let txBlock = document.getElementById("txDef");
+      txBlock.insertAdjacentHTML( 'beforeend', str );
+      calculateIndex();
     }
-
+  function calculateIndex(){
+    let el = document.getElementById("txDef").children;
+    let counter = 0;
+    Array.from(el).forEach( (child) => {
+      let span = child.getElementsByClassName("txIndex")[0];
+      span.innerHTML = counter;
+      counter++;
+      });
+  }
   </script>
   <body>
     <h1> Create and issue a flashbots bundle! </h1>
@@ -34,7 +56,7 @@ let flashbotsHtml = `
     <div id="txDef" style="margin-top: 20px;">
       <form style="margin-top: 15px;">
         <p>---------------------------------------------------------</p>
-       <h3> Transaction number <span id="txIndex"></span></h3>
+       <h3> Transaction number <span class="txIndex"></span></h3>
         <input type="button" onclick="removeTx(this.parentElement);" value="Remove tx">
         <label for="addr">Target Address</label><br>
         <input type="text" id="addr" name="targetAddress"></br>
