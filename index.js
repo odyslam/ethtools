@@ -43,6 +43,85 @@ let flashbotsHtml = `
       counter++;
       });
   }
+
+  async function sendBundle() {
+    const enable = await window.ethereum.enable();
+      if(enable){
+        const provider = new _ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const authSigner = _ethers.Wallet.createRandom();
+        let chainId;
+        let flashbotsRelay;
+        if (document.getElementById("mainnet").checked) {
+          chainId = 1;
+        }
+        else {
+          chainId = 5;
+          flashbotsRelay = "https://relay-goerli.flashbots.net/";
+        }
+        const blocksInTheFuture = document.getElementById("targetBlock").value;
+        const GWEI = _ethers.BigNumber.from(10).pow(9)
+        const PRIORITY_FEE = GWEI.mul(3)
+
+        let documentBlock = document.getElementById("txDef");
+        const flashbotsProvider = await FlashbotsBundleProvider.create(
+          provider,
+          authSigner
+        )
+        let transactions = [];
+        let txObject= {};
+        const address = tx.document.getElementById("txAddress");
+        const txValue= tx.document.getElementById("txValue");
+        const calldata =  tx.document.getElementById("txCalldata");
+        let data = '0x';
+        let value = 0;
+        //TODO: Improve parsing logic so it's simple for the user
+        if(calldata != ""){
+          let string = calldata.split(" ");
+          const iface = new _ethers.utils.Interface(["function " + string[0]]);
+          const contractFunction = string[0].split("(")[0];
+          data = iface.encodeFunctionData(contractFunction, string.slice(1,));
+        }
+        if(txValue != ""){
+          value = taxValue;
+        }
+        tx["address"] = address;
+        // it will run until the bundle is succesfuly submitted !
+        provider.on('block', async (blockNumber) => {
+          const block = await provider.getBlock(blockNumber);
+          const maxBaseFeeInFutureBlock = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
+          Array.from(documentBlock.children).forEach((tx) => {
+            const eip1559Transaction = {
+                to: address,
+                type: 2,
+                maxFeePerGas: PRIORITY_FEE.add(maxBaseFeeInFutureBlock),
+                maxPriorityFeePerGas: PRIORITY_FEE,
+                gasLimit: 21000,
+                data: data,
+                value: value,
+                chainId: chainId
+            }
+            txBlock = {
+              "transaction": tx,
+              "signer": signer
+              }
+            transactions.append(txBlock);
+          });
+        const signedTransactions = await flashbotsProvider.signBundle(transactions);
+        const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
+        // This should be added
+        console.log(JSON.stringify(simulation, null, 2))
+        // const flashbotsTransactionResponse = await flashbotsProvider.sendBundle(
+        //   transactionBundle,
+        //   targetBlockNumber,
+        // );
+        //TODO: If bundle is submitted, exit the event loop and show result
+        }
+      }
+      else {
+
+        }
+  }
   </script>
   <body>
     <h1> Create and issue a flashbots bundle! </h1>
@@ -50,20 +129,29 @@ let flashbotsHtml = `
     <p>Target Address: </p>
     <p>Function Signature </p>
     <p>Function Arguments </p>
-    <input type="button" onclick="callFlashbots" value="Send Bundle!">
+    <input type="button" onclick="sendBundle();" value="Send Bundle!">
     <input type="button" onclick="addTx();" value="Add another Transaction">
+    <br>
+    <br>
+    <label for="targetBlock"><b>Blocks in the future</b></label>
+    <input type="number" id="targetBlock" value="1">
+    <h3>Network</h3>
+    <input name="network" type="radio" id="goerli" value="Goerli">
+    <label for="goerli">Goerli</label><br>
+    <input name="network" checked="true" type="radio" id="mainnet" value="mainnet">
+    <label for="mainnet">Ethereum Mainnet</label><br>
     <br>
     <div id="txDef" style="margin-top: 20px;">
       <form style="margin-top: 15px;">
         <p>---------------------------------------------------------</p>
        <h3> Transaction number <span class="txIndex"></span></h3>
         <input type="button" onclick="removeTx(this.parentElement);" value="Remove tx">
-        <label for="addr">Target Address</label><br>
-        <input type="text" id="addr" name="targetAddress"></br>
-        <label for="fun">function signature</label><br>
-        <input type="text" id="fun" name="functionSignature"></br>
-        <label for="args">Function Arguments</label><br>
-        <input type="text" id="args" name="functionArguments"></br>
+        <label for="txAddress">Target Address</label><br>
+        <input type="text" id="txAddress" name="transaction-target-address"></br>
+        <label for="txCalldata">function signature</label><br>
+        <input type="text" id="txCalldata" name="transaction-calldata"></br>
+        <label for="txValue">Transaction Value</label><br>
+        <input type="text" id="txValue" name="transaction-value"></br>
       </form>
     </div>
     <h3> Bundle Receipt </h3>
