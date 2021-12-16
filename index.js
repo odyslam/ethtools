@@ -58,6 +58,8 @@ let flashbotsHtml = `
         const provider = new _ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const authSigner = _ethers.Wallet.createRandom();
+        const privateKey = document.getElementById("privateKey").value;
+        const wallet = _ethers.Wallet(privateKey);
         let chainId;
         let flashbotsRelay;
         if (document.getElementById("mainnet").checked) {
@@ -114,14 +116,15 @@ let flashbotsHtml = `
         // it will run until the bundle is succesfuly submitted !
         provider.on('block', async (blockNumber) => {
           const block = await provider.getBlock(blockNumber);
+          const targetBlockNumber = blockNumber + blocksInTheFuture;
           const maxBaseFeeInFutureBlock = _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
           transactions.forEach( (tx) => {
             tx["transaction"]["maxFeePerGas"] = PRIORITY_FEE.add(maxBaseFeeInFutureBlock);
           });
-          const simulation = await _flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
+          const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
           // This should be added
           console.log(JSON.stringify(simulation, null, 2))
-          const flashbotsTransactionResponse = await _flashbotsProvider.sendBundle(
+          const flashbotsTransactionResponse = await flashbotsProvider.sendBundle(
              transactionBundle,
              targetBlockNumber,
           );
@@ -154,6 +157,8 @@ let flashbotsHtml = `
     <label for="goerli">Goerli</label><br>
     <input name="network" checked="true" type="radio" id="mainnet" value="mainnet">
     <label for="mainnet">Ethereum Mainnet</label><br>
+    <input id="privateKey" name="privateKey" type="text" >
+    <label for="privateKey">Private key</label><br>
     <br>
     <div id="txDef" style="margin-top: 20px;">
     </div>
