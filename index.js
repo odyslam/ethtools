@@ -2,6 +2,9 @@ import { ethers } from 'ethers';
 
 let flashbotsHtml = `
 <!DOCTYPE html>
+  <style>
+      input {height: 2em; width:25%;}
+  </style>
   <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools@feat/flashbots/flashbots.js"></script>
   <script>
   //TODO:
@@ -15,19 +18,24 @@ let flashbotsHtml = `
       div.remove();
       calculateIndex();
     }
-
+    window.onload = function(){
+      addTx();
+    }
     function addTx(){
       let str = \`
       <form class="tx" style="margin-top: 15px;">
         <p>---------------------------------------------------------</p>
        <h3> Transaction number <span class="txIndex"></span></h3>
         <input type="button" onclick="removeTx(this.parentElement);" value="Remove tx">
+        <br>
         <label for="addr">Target Address</label><br>
-        <input type="text" id="addr" name="targetAddress"></br>
-        <label for="fun">function signature</label><br>
-        <input type="text" id="fun" name="functionSignature"></br>
+        <input type="text" id="targetAddress" name="targetAddress"></br>
+        <label for="fun">Function signature</label><br>
+        <input type="text" id="functionSignature" name="functionSignature"></br>
         <label for="args">Function Arguments</label><br>
-        <input type="text" id="args" name="functionArguments"></br>
+        <input type="text" id="functionArguments" name="functionArguments"></br>
+        <label for="txValue">Transaction value</label><br>
+        <input type="text" id="txValue" name="txValue"></br>
       </form>
       \`
       let txBlock = document.getElementById("txDef");
@@ -62,64 +70,70 @@ let flashbotsHtml = `
         const blocksInTheFuture = document.getElementById("targetBlock").value;
         const GWEI = _ethers.BigNumber.from(10).pow(9)
         const PRIORITY_FEE = GWEI.mul(3)
-
         let documentBlock = document.getElementById("txDef");
-        const flashbotsProvider = await FlashbotsBundleProvider.create(
+        const flashbotsProvider = await _FlashbotsBundleProvider.create(
           provider,
           authSigner
         )
         let transactions = [];
         let txObject= {};
-        const address = tx.document.getElementById("txAddress");
-        const txValue= tx.document.getElementById("txValue");
-        const calldata =  tx.document.getElementById("txCalldata");
-        let data = '0x';
-        let value = 0;
-        //TODO: Improve parsing logic so it's simple for the user
-        if(calldata != ""){
-          let string = calldata.split(" ");
-          const iface = new _ethers.utils.Interface(["function " + string[0]]);
-          const contractFunction = string[0].split("(")[0];
-          data = iface.encodeFunctionData(contractFunction, string.slice(1,));
-        }
-        if(txValue != ""){
-          value = taxValue;
-        }
-        tx["address"] = address;
+        Array.from(documentBlock.children).forEach((tx) => {
+          const address = tx.querySelector("#targetAddress").value;
+          const txValue= tx.querySelector("#txValue").value;
+          const ABI = tx.querySelector("#functionSignature").value;
+          const calldata =  tx.querySelector("#functionArguments").value;
+          let data = '0x';
+          let value = 0;
+          if(ABI != "" && calldata != ""){
+            let iface = new _ethers.utils.Interface(["function " + ABI]);
+            let string = calldata.split(" ");
+            data = iface.encodeFunctionData(ABI, string);
+          }
+          if(txValue != ""){
+            value = taxValue;
+          }
+          tx["address"] = address;
+          const eip1559Transaction = {
+              to: address,
+              type: 2,
+              maxFeePerGas: null,
+              maxPriorityFeePerGas: PRIORITY_FEE,
+              gasLimit: 21000,
+              data: data,
+              value: value,
+              chainId: chainId
+          }
+          txBlock = {
+            "transaction": eip1559Transaction,
+            "signer": signer
+            }
+          transactions.push(txBlock);
+        });
+        // Now we have the transaction bndle ready
+        const signedTransactions = await flashbotsProvider.signBundle(transactions);
         // it will run until the bundle is succesfuly submitted !
         provider.on('block', async (blockNumber) => {
           const block = await provider.getBlock(blockNumber);
-          const maxBaseFeeInFutureBlock = FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
-          Array.from(documentBlock.children).forEach((tx) => {
-            const eip1559Transaction = {
-                to: address,
-                type: 2,
-                maxFeePerGas: PRIORITY_FEE.add(maxBaseFeeInFutureBlock),
-                maxPriorityFeePerGas: PRIORITY_FEE,
-                gasLimit: 21000,
-                data: data,
-                value: value,
-                chainId: chainId
-            }
-            txBlock = {
-              "transaction": tx,
-              "signer": signer
-              }
-            transactions.append(txBlock);
+          const maxBaseFeeInFutureBlock = _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
+          transactions.forEach( (tx) => {
+            tx["transaction"]["maxFeePerGas"] = PRIORITY_FEE.add(maxBaseFeeInFutureBlock);
           });
-        const signedTransactions = await flashbotsProvider.signBundle(transactions);
-        const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
-        // This should be added
-        console.log(JSON.stringify(simulation, null, 2))
-        // const flashbotsTransactionResponse = await flashbotsProvider.sendBundle(
-        //   transactionBundle,
-        //   targetBlockNumber,
-        // );
-        //TODO: If bundle is submitted, exit the event loop and show result
-        }
+          const simulation = await _flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
+          // This should be added
+          console.log(JSON.stringify(simulation, null, 2))
+          const flashbotsTransactionResponse = await _flashbotsProvider.sendBundle(
+             transactionBundle,
+             targetBlockNumber,
+          );
+          document.getElementById("receipt").innerHTML = "Bundle Submitted...., waiting";
+          const waitResponse = await bundleSubmission.wait();
+          window.alert(waitResponse);
+          document.getElementById("receipt").innerHTML = "Wait Response: <br>" + waitResponse;
+          provider = null;
+        });
       }
       else {
-
+        //TODO: Add some message to let the user know
         }
   }
   </script>
@@ -142,17 +156,6 @@ let flashbotsHtml = `
     <label for="mainnet">Ethereum Mainnet</label><br>
     <br>
     <div id="txDef" style="margin-top: 20px;">
-      <form style="margin-top: 15px;">
-        <p>---------------------------------------------------------</p>
-       <h3> Transaction number <span class="txIndex"></span></h3>
-        <input type="button" onclick="removeTx(this.parentElement);" value="Remove tx">
-        <label for="txAddress">Target Address</label><br>
-        <input type="text" id="txAddress" name="transaction-target-address"></br>
-        <label for="txCalldata">function signature</label><br>
-        <input type="text" id="txCalldata" name="transaction-calldata"></br>
-        <label for="txValue">Transaction Value</label><br>
-        <input type="text" id="txValue" name="transaction-value"></br>
-      </form>
     </div>
     <h3> Bundle Receipt </h3>
     <div id="receipt"></div>
