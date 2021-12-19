@@ -96,8 +96,6 @@ let flashbotsHtml = `
         const provider = new _ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const authSigner = _ethers.Wallet.createRandom();
-        const privateKey = document.getElementById("privateKey").value;
-        const wallet = _ethers.Wallet(privateKey);
         let chainId;
         let flashbotsRelay;
         if (document.getElementById("mainnet").checked) {
@@ -197,8 +195,6 @@ let flashbotsHtml = `
     <label for="goerli">Goerli</label><br>
     <input name="network" checked="true" type="radio" id="mainnet" value="mainnet">
     <label for="mainnet">Ethereum Mainnet</label><br>
-    <input id="privateKey" name="privateKey" type="text" >
-    <label for="privateKey">Private key</label><br>
     <br>
     <div id="txDef" style="margin-top: 20px;">
     </div>
