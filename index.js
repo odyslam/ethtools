@@ -6,9 +6,9 @@ let flashbotsHtml = `
       input {height: 2em; width:25%;}
   </style>
   <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools@feat/flashbots/flashbots.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
   <script>
   //TODO:
-  // 1. Add counters to transactions
   // 2. Add field to enter gas you want to pay
   // 3. create function to send bundle
   // 4. Create logic for simple ETH transfers
@@ -52,8 +52,46 @@ let flashbotsHtml = `
       });
   }
 
+  async function getBundle(id){
+    return await fetch("https://rpc.flashbots.net/bundle?id="+id);
+  }
+  async function addRpcEndpoint(id){
+    let rpcEndpoint = "https://rpc.flashbots.net?bundle="+id;
+    params = [
+          {
+              "chainId": "0x01",
+              "chainName": "Flashbots Protect RPC Endpoint",
+              "rpcUrls": [
+                  rpcEndpoint
+              ],
+              "iconUrls": [
+                  "https://docs.flashbots.net/img/logo.png"
+              ],
+              "nativeCurrency": {
+                  "name": "ETH",
+                  "symbol": "ETH",
+                  "decimals": 18
+              }
+          }
+      ];
+    await ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params:  params,
+    });
+    await ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params:   [{ chainId: '0xf01' }],
+    });
+  }
   async function sendBundle() {
     const enable = await window.ethereum.enable();
+    const bundleId = uuid.v4();
+    try {
+      addRpcEndpoint(bundleId);
+    }
+    catch (error) {
+      window.alert("Encountered error: " + error);
+      }
       if(enable){
         const provider = new _ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
@@ -111,28 +149,30 @@ let flashbotsHtml = `
             }
           transactions.push(txBlock);
         });
-        // Now we have the transaction bndle ready
-        const signedTransactions = await flashbotsProvider.signBundle(transactions);
-        // it will run until the bundle is succesfuly submitted !
         provider.on('block', async (blockNumber) => {
-          const block = await provider.getBlock(blockNumber);
-          const targetBlockNumber = blockNumber + blocksInTheFuture;
-          const maxBaseFeeInFutureBlock = _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
-          transactions.forEach( (tx) => {
-            tx["transaction"]["maxFeePerGas"] = PRIORITY_FEE.add(maxBaseFeeInFutureBlock);
-          });
-          const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
-          // This should be added
-          console.log(JSON.stringify(simulation, null, 2))
-          const flashbotsTransactionResponse = await flashbotsProvider.sendBundle(
-             transactionBundle,
-             targetBlockNumber,
-          );
-          document.getElementById("receipt").innerHTML = "Bundle Submitted...., waiting";
-          const waitResponse = await bundleSubmission.wait();
-          window.alert(waitResponse);
-          document.getElementById("receipt").innerHTML = "Wait Response: <br>" + waitResponse;
-          provider = null;
+          if(!lock){
+            const block = await provider.getBlock(blockNumber);
+            const targetBlockNumber = blockNumber + blocksInTheFuture;
+            const maxBaseFeeInFutureBlock = _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
+            transactions.forEach( (tx) => {
+              tx["transaction"]["maxFeePerGas"] = PRIORITY_FEE.add(maxBaseFeeInFutureBlock);
+              signer.sendTransaction(tx);
+            });
+            const bundle = await getBundle(bundleId);
+            const signedTransactions= await flashbotsProvider.signBundle(bundle.rawTxs.reverse());
+            const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
+            // This should be added
+            console.log(JSON.stringify(simulation, null, 2))
+            const flashbotsTransactionResponse = await flashbotsProvider.sendBundle(
+               transactionBundle,
+               targetBlockNumber,
+            );
+            document.getElementById("receipt").innerHTML = "Bundle Submitted...., waiting";
+            const waitResponse = await bundleSubmission.wait();
+            provider.off('block');
+            window.alert(waitResponse);
+            document.getElementById("receipt").innerHTML = "Wait Response: <br>" + waitResponse;
+          }
         });
       }
       else {
