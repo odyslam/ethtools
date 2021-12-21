@@ -20,6 +20,10 @@ let flashbotsHtml = `
     }
     window.onload = function(){
       addTx();
+      window.ethereum.enable();
+      const bundleId = uuid.v4();
+      let rpcEndpoint = "https://rpc.flashbots.net?bundle="+bundleId;
+      document.getElementById("rpcEndpoint").innerHTML = rpcEndpoint;
     }
     function addTx(){
       let str = \`
@@ -55,43 +59,9 @@ let flashbotsHtml = `
   async function getBundle(id){
     return await fetch("https://rpc.flashbots.net/bundle?id="+id);
   }
-  async function addRpcEndpoint(id){
-    let rpcEndpoint = "https://rpc.flashbots.net?bundle="+id;
-    params = [
-          {
-              "chainId": "0x01",
-              "chainName": "Flashbots Protect RPC Endpoint",
-              "rpcUrls": [
-                  rpcEndpoint
-              ],
-              "iconUrls": [
-                  "https://docs.flashbots.net/img/logo.png"
-              ],
-              "nativeCurrency": {
-                  "name": "ETH",
-                  "symbol": "ETH",
-                  "decimals": 18
-              }
-          }
-      ];
-    await ethereum.request({
-      method: 'wallet_addEthereumChain',
-      params:  params,
-    });
-    await ethereum.request({
-      method: 'wallet_switchEthereumChain',
-      params:   [{ chainId: '0xf01' }],
-    });
-  }
+
   async function sendBundle() {
-    const enable = await window.ethereum.enable();
-    const bundleId = uuid.v4();
-    try {
-      addRpcEndpoint(bundleId);
-    }
-    catch (error) {
-      window.alert("Encountered error: " + error);
-      }
+      let bundleId = document.getElementById("rpcEndpoint").innerHTML;
       if(enable){
         const provider = new _ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
@@ -180,7 +150,15 @@ let flashbotsHtml = `
   </script>
   <body>
     <h1> Create and issue a flashbots bundle! </h1>
-    <h3> Instructions </h3>
+    <h2> Instructions </h2>
+    <ol>
+      <li>Add the following RPC endpoint to Metamask: <span id="rpcEndpoint" style="font-weight:bold"></span></li>
+      <li>If you are not sure how to do (1), watch <a href="">this video</a></li>
+      <li>Add transactions and populate the fields according to the examples below</li>
+      <li>When you click on <b>Send the Bundle!</b> metamask will prompt you to sign the transactions</li>
+      <li>The transactions will be sent to flashbots as a bundle. You may need to sign them <b>again</b> if they are not issued at the requested future block, as the tools updates the gas information</li>
+      <li>Read the Bundle receipt that is printed below and keep an eye on <a href="https://etherscan.io/">Etherscan</a>
+    <ol>
     <p>Target Address: </p>
     <p>Function Signature </p>
     <p>Function Arguments </p>
