@@ -7,3 +7,5 @@ zone_id = ""
 compatibility_date = "2021-11-22"
 webpack_config = "webpack.config.js"
 
+[env.staging]
+name="sovtech"
