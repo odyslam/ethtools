@@ -82,11 +82,11 @@ let defaultHtml = `
     </style>
   </head>
   <body>
-    <h1>Ethtools ⚒️</h1>
+    <h1> ⚒️  Ethtools</h1>
     <h2>Intro</h2>
     <p> Ethtools is a collection of tools and API endpoints for ethereum users and developers. It's about offering easy-to-use abstractions over existing tooling.</p>
     <p> All functionality uses your metamask provider, thus it will NEVER access any sensitive information.</p>
-    <p> You can easily inspect the source of this webpage to verify the code yourself. It's hosted on Cloudflare workers and hand-crafted by odyslam.eth.</p>
+    <p> You can easily inspect the source of this webpage to verify the code yourself. It's hosted on Cloudflare workers.</p>
     <p> View the source code on <a href="https://github.com/odyslam/ethereum-worker-tools">GitHub</a>. If something doesn't make sense, please open a GitHub issue or submit a PR.</p>
     <p>A project by <a href="https://twitter.com/odyslam_">odyslam.eth</a></p>
     <h2>Index</h2>
