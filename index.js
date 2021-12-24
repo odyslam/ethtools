@@ -2,17 +2,23 @@ import { ethers } from 'ethers';
 
 let flashbotsHtml = `
 <!DOCTYPE html>
-  <style>
+  <head>
+    <title>Ethtools</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠 </text></svg>">
+    <style>
+      body {
+        background-color:darkgreen;
+        color: lightblue;
+        }
+      a:visited {
+        color: blue;
+        }
       input {height: 2em; width:25%;}
-  </style>
+    </style>
+  </head>
   <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools@feat/flashbots/flashbots.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
   <script>
-  //TODO:
-  // 2. Add field to enter gas you want to pay
-  // 3. create function to send bundle
-  // 4. Create logic for simple ETH transfers
-  //
     function removeTx(div){
       console.log(div);
       div.remove();
