@@ -319,6 +319,9 @@ let defaultHtml = `
     <p>
       <b><a href="/deploy">/deploy</a></b>: Deploy a smart contract. You will need the constructor signature, constructor arguments and the bytecode of the smart contract.
     </p>
+    <p>
+      <b><a href="/flashbots">/flashbots</a></b>: Easily submit a transaction bundle to Flashbots (🤖,⚡️) an arbitrary number of transactions of any kind, from value transfer to smart contract calls. Kudos to the Flashbots team for helping assisting me with the integration.
+    </p>
   <body>
 </html>
 `
