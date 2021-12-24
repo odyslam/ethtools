@@ -11,9 +11,12 @@
   "author": "Odysseas Lamtzidis <odyslam@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "babel-preset-es2015": "^6.24.1",
+    "esmify": "^2.1.1",
     "prettier": "^1.18.2"
   },
   "dependencies": {
-    "ethers": "^5.5.1"
+    "@flashbots/ethers-provider-bundle": "^0.4.2",
+    "browser-resolve": "^2.0.0"
   }
 }

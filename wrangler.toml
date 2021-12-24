@@ -1,6 +1,5 @@
 name = "ethtools"
 type = "webpack"
-
 account_id = "bdb8fc9e053d4e6dee2f75abd28afc7e"
 workers_dev = true
 route = ""
@@ -8,3 +7,5 @@ zone_id = ""
 compatibility_date = "2021-11-22"
 webpack_config = "webpack.config.js"
 
+[env.staging]
+name="sovtech"
