@@ -39,9 +39,9 @@ let flashbotsHtml = `
         <label for="args">Function Arguments</label><br>
         <input type="text" id="functionArguments" name="functionArguments"></br>
         <label for="txValue">Transaction value</label><br>
-        <input type="number" id="txValue" name="txValue" default="0"></br>
+        <input type="number" id="txValue" name="txValue" value="0"></br>
         <label for="gasLimit">Gas Limit</label><br>
-        <input type="number" id="gasLimit" name="gasLimit" default="2100"></br>
+        <input type="number" id="gasLimit" name="gasLimit" value="2100"></br>
       </form>
       \`
       let txBlock = document.getElementById("txDef");
@@ -71,7 +71,7 @@ let flashbotsHtml = `
         const signer = provider.getSigner();
         const authSigner = _ethers.Wallet.createRandom();
         let chainId;
-        let flashbotsRelay;
+        let flashbotsRelay = "https://relay.epheph.com/"
         if (document.getElementById("mainnet").checked) {
           chainId = 1;
         }
@@ -82,10 +82,15 @@ let flashbotsHtml = `
         const blocksInTheFuture = document.getElementById("targetBlock").value;
         const GWEI = _ethers.BigNumber.from(10).pow(9)
         const priorityFee = GWEI.mul(parseInt(document.getElementById("priorityFee").value));
+        const blockNumber = await provider.getBlockNumber();
+        const block = await provider.getBlock();
+        const targetBlockNumber = blockNumber + blocksInTheFuture;
+        const maxBaseFeeInFutureBlock = 2 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
         let documentBlock = document.getElementById("txDef");
         const flashbotsProvider = await _FlashbotsBundleProvider.create(
           provider,
-          authSigner
+          authSigner,
+          flashbotsRelay
         )
         let transactions = [];
         let txObject= {};
@@ -102,18 +107,16 @@ let flashbotsHtml = `
             let string = calldata.split(" ");
             data = iface.encodeFunctionData(ABI, string);
           }
-          if(txValue != ""){
-            value = taxValue;
-          }
+          value = txValue;
           tx["address"] = address;
           const eip1559Transaction = {
               to: address,
               type: 2,
-              maxFeePerGas: null,
-              maxPriorityFeePerGas: priorityFee,
-              gasLimit: gasLimit,
+              maxFeePerGas: parseInt(maxBaseFeeInFutureBlock),
+              maxPriorityFeePerGas: parseInt(priorityFee),
+              gasLimit: parseInt(gasLimit),
               data: data,
-              value: value,
+              value: parseInt(value),
               chainId: chainId
           }
           txBlock = {
@@ -122,49 +125,40 @@ let flashbotsHtml = `
             }
           transactions.push(txBlock);
         });
-        let lock = false;
         let counter = blocksInTheFuture;
-        provider.on('block', async (blockNumber) => {
-            if(blocksInTheFuture != 2){
-              provider.off('block');
-            }
-            const block = await provider.getBlock(blockNumber);
-            const targetBlockNumber = blockNumber + blocksInTheFuture;
-            const maxBaseFeeInFutureBlock = _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
-            transactions.forEach( (tx) => {
-              tx["transaction"]["maxFeePerGas"] = priorityFee.add(maxBaseFeeInFutureBlock);
-              signer.sendTransaction(tx);
-            });
-            const bundle = await getBundle(bundleId);
-            const signedTransactions= await flashbotsProvider.signBundle(bundle.rawTxs.reverse());
-            const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
-            if ('error' in simulation) {
-              provider.off('block')
-              window.alert("There was some error in the flashbots simulation, please read the bundle receipt");
-              document.getElementById("receipt").innerHTML = simulation.error.message;
-            } else {
-              window.alert("Flashbots simulation was a success: " + JSON.stringify(simulation, null, 2));
-            }
-            const flashbotsSubmission= await flashbotsProvider.sendBundle(
-               transactionBundle,
-               targetBlockNumber,
-            );
-            window.alert("Bundle Submitted. Waiting...");
-            if('error' in bundleSubmission){
-              window.alert("There was some error in the flashbots submission, please read the bundle receipt");
-              document.getElementById("receipt").innerHTML = bundleSubmission.error.message;
-            }
-            const waitResponse = await flashbotsSubmission.wait();
-            document.getelementbyid("receipt").innerhtml = _FlashbotsBundleResolution[waitResponse];
-            if (waitResponse === _FlashbotsBundleResolution.BundleIncluded ){
-              window.alert("Your Bundle just got mined!, read the bundle receipt and visit etherscan to verify!");
-              provider.off('block');
-            }
-            else if (waitResponse === _FlashbotsBundleResolution.AccountNonceTooHigh){
-              window.alert("Flashbots encountered an error: AccountNonceTooHigh");
-              provider.off('block');
-            }
+        transactions.forEach( (tx) => {
+          signer.sendTransaction(tx.transaction);
         });
+        const bundle = await getBundle(bundleId);
+        const signedTransactions= await flashbotsProvider.signBundle(bundle.rawTxs.reverse());
+        const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
+        if ('error' in simulation) {
+          window.alert("There was some error in the flashbots simulation, please read the bundle receipt");
+          document.getElementById("receipt").innerHTML = simulation.error.message;
+        } else {
+          window.alert("Flashbots simulation was a success: " + JSON.stringify(simulation, null, 2));
+          provider.on('block', async (blockNumber) => {
+              const flashbotsSubmission= await flashbotsProvider.sendBundle(
+                 transactionBundle,
+                 targetBlockNumber,
+              );
+              window.alert("Bundle Submitted. Waiting...");
+              if('error' in bundleSubmission){
+                window.alert("There was some error in the flashbots submission, please read the bundle receipt");
+                document.getElementById("receipt").innerHTML = bundleSubmission.error.message;
+              }
+              const waitResponse = await flashbotsSubmission.wait();
+              document.getelementbyid("receipt").innerhtml = _FlashbotsBundleResolution[waitResponse];
+              if (waitResponse === _FlashbotsBundleResolution.BundleIncluded ){
+                window.alert("Your Bundle just got mined!, read the bundle receipt and visit etherscan to verify!");
+                provider.off('block');
+              }
+              else if (waitResponse === _FlashbotsBundleResolution.AccountNonceTooHigh){
+                window.alert("Flashbots encountered an error: AccountNonceTooHigh");
+                provider.off('block');
+              }
+          });
+        }
       }
       else {
         window.alert("Metamask is disabled. Please enable Metamask");
@@ -176,15 +170,16 @@ let flashbotsHtml = `
     <h2> Instructions </h2>
     <ol>
       <li>Add the following RPC endpoint to Metamask: <span id="rpcEndpoint" style="font-weight:bold"></span></li>
-      <li>If you are not sure how to do (1), watch <a href="">this video</a></li>
+      <li>If you are not sure how to do (1), watch <a href="">this video</a>. If you have done this step before, just update the RPC endpoint you added before with this new one.</li>
       <li>Add transactions and populate the fields according to the examples below</li>
       <li>When you click on <b>Send the Bundle!</b> metamask will prompt you to sign the transactions</li>
-      <li>The transactions will be sent to flashbots as a bundle. You may need to sign them <b>again</b> if they are not issued at the requested future block, as the tools updates the gas information</li>
-      <li>Read the Bundle receipt that is printed below and keep an eye on <a href="https://etherscan.io/">Etherscan</a>
+      <li>The transactions will be sent to flashbots as a bundle to be executed all in the same block. </li>
+      <li> An alert window will pop up to inform you on the success or failure of the submission. The receipt will be printed in the field at the end of the page.</li>
     <ol>
     <h2>Fields Reference</h2>
     <p>Blocks in the Future: The number of blocks in the future in which the bundle should be mined (e.g next block = 1 block in the future)</p>
     <p>Gas Fee: How much do you want to pay the miners to include your bundle? This amount will be paid for each transaction in the bundle.</p>
+    <p>Base Fee: Flashbots will try to predict the baseFee of the future block you defined. We define, as a limit, double the predicted baseFee so that we increase the chances of the bundle to be included, even if the baseFee is larger than expected.</>
     <p>Target Address: e.g <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
     <p>Function Signature: <code>safeTransferFrom(address, address, uint256, uint256, bytes)</code></p>
     <p>Function Arguments: <code>0x8DbD1b711DC621e1404633da156FcC779e1c6f3E 0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc 42 1 0x </code></p>
@@ -195,7 +190,7 @@ let flashbotsHtml = `
     <br>
     <br>
     <label for="targetBlock"><b>Blocks in the future</b></label>
-    <input type="number" id="targetBlock" value="2">
+    <input type="number" id="targetBlock" value="1">
     <label for="priorityFee"><b>Priority Fee (GWEI, per transaction)</b></label>
     <input type="number" id="priorityFee" value="3">
     <h3>Network</h3>
