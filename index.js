@@ -189,8 +189,11 @@ let flashbotsHtml = `
       }
   }
   </script>
+<header>
+  <h3><a href="/">👈Ethtools</a></h3>
+</header>
   <body>
-    <h1> Create and issue a flashbots bundle! (Experimental)</h1>
+    <h1> Create and issue a flashbots bundle 🤖 ⚡️ (Experimental)</h1>
     <h2> Instructions </h2>
     <ol>
       <li>Add the following RPC endpoint to Metamask: <span id="rpcEndpoint" style="font-weight:bold"></span></li>
@@ -201,14 +204,14 @@ let flashbotsHtml = `
       <li> An alert window will pop up to inform you on the success or failure of the submission. The receipt will be printed in the field at the end of the page.</li>
     <ol>
     <h2>Fields Reference</h2>
-    <p>Blocks in the Future: The number of blocks in the future in which the bundle should be mined (e.g next block = 1 block in the future)</p>
-    <p>Gas Fee: How much do you want to pay the miners to include your bundle? This amount will be paid for each transaction in the bundle.</p>
-    <p>Base Fee: Flashbots will try to predict the baseFee of the future block you defined. We define, as a limit, double the predicted baseFee so that we increase the chances of the bundle to be included, even if the baseFee is larger than expected.</>
-    <p>Target Address: <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
-    <p>Function Signature: <code>safeTransferFrom(address, address, uint256, uint256, bytes)</code></p>
-    <p>Function Arguments: <code>0x8DbD1b711DC621e1404633da156FcC779e1c6f3E 0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc 42 1 0x </code></p>
-    <p>Transaction Value: <code>0</code> </p>
-    <p>Gas Limit: <code>100000</code></p>
+    <p><b>Blocks in the Future</b>: The number of blocks in the future in which the bundle should be mined (e.g next block = 1 block in the future)</p>
+    <p><b>Gas Fee</b>: How much do you want to pay the miners to include your bundle? This amount will be paid for each transaction in the bundle.</p>
+    <p><b>Base Fee</b>: Flashbots will try to predict the baseFee of the future block you defined. We define, as a limit, double the predicted baseFee so that we increase the chances of the bundle to be included, even if the baseFee is larger than expected.</>
+    <p><b>Target Address</b>: <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
+    <p><b>Function Signature</b>: <code>safeTransferFrom(address, address, uint256, uint256, bytes)</code></p>
+    <p><b>Function Arguments</b>: <code>0x8DbD1b711DC621e1404633da156FcC779e1c6f3E 0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc 42 1 0x </code></p>
+    <p><b>Transaction Value</b>: <code>0</code> </p>
+    <p><b>Gas Limit</b>: <code>100000</code></p>
     <input type="button" onclick="sendBundle();" value="Send Bundle!">
     <input type="button" onclick="addTx();" value="Add another Transaction">
     <br>
