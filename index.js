@@ -167,7 +167,6 @@ let flashbotsHtml = `
                  transactionBundle,
                  targetBlockNumber,
               );
-              window.alert("Bundle Submitted. Waiting...");
               if('error' in bundleSubmission){
                 window.alert("There was some error in the flashbots submission, please read the bundle receipt");
                 document.getElementById("receipt").innerHTML = bundleSubmission.error.message;
@@ -175,8 +174,8 @@ let flashbotsHtml = `
               const waitResponse = await flashbotsSubmission.wait();
               document.getelementbyid("receipt").innerhtml = _FlashbotsBundleResolution[waitResponse];
               if (waitResponse === _FlashbotsBundleResolution.BundleIncluded ){
-                window.alert("Your Bundle just got mined!, read the bundle receipt and visit etherscan to verify!");
                 provider.off('block');
+                window.alert("Your Bundle just got mined!, read the bundle receipt and visit etherscan to verify!");
               }
               else if (waitResponse === _FlashbotsBundleResolution.AccountNonceTooHigh){
                 window.alert("Flashbots encountered an error: AccountNonceTooHigh");
