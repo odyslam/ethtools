@@ -104,13 +104,9 @@ let flashbotsHtml = `
           chainId = 5;
           flashbotsRelay = "https://relay-goerli.flashbots.net/";
         }
-        const blocksInTheFuture = document.getElementById("targetBlock").value;
+        const blocksInTheFuture = parseInt(document.getElementById("targetBlock").value);
         const GWEI = _ethers.BigNumber.from(10).pow(9)
         const priorityFee = GWEI.mul(parseInt(document.getElementById("priorityFee").value));
-        const blockNumber = await provider.getBlockNumber();
-        const block = await provider.getBlock();
-        const targetBlockNumber = blockNumber + blocksInTheFuture;
-        const maxBaseFeeInFutureBlock = 2 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
         let documentBlock = document.getElementById("txDef");
         const flashbotsProvider = await _FlashbotsBundleProvider.create(
           provider,
@@ -119,6 +115,10 @@ let flashbotsHtml = `
         )
         let transactions = [];
         let txObject= {};
+        const blockNumber = await provider.getBlockNumber();
+        const block = await provider.getBlock();
+        const targetBlockNumber = blockNumber + blocksInTheFuture;
+        const maxBaseFeeInFutureBlock = 2 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
         Array.from(documentBlock.children).forEach((tx) => {
           const address = tx.querySelector("#targetAddress").value;
           const txValue= tx.querySelector("#txValue").value;
@@ -155,8 +155,8 @@ let flashbotsHtml = `
           await signer.sendTransaction(transactions[index].transaction);
         }
         const bundle = await getBundle(bundleId);
-        const signedTransactions= await flashbotsProvider.signBundle(bundle.rawTxs.reverse());
-        const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
+        const orderedBundle = bundle.rawTxs.reverse();
+        const simulation = await flashbotsProvider.simulate(orderedBundle, targetBlockNumber);
         if ('error' in simulation) {
           window.alert("There was some error in the flashbots simulation, please read the bundle receipt");
           document.getElementById("receipt").innerHTML = simulation.error.message;
@@ -191,7 +191,7 @@ let flashbotsHtml = `
   }
   </script>
   <body>
-    <h1> Create and issue a flashbots bundle! </h1>
+    <h1> Create and issue a flashbots bundle! (Experimental)</h1>
     <h2> Instructions </h2>
     <ol>
       <li>Add the following RPC endpoint to Metamask: <span id="rpcEndpoint" style="font-weight:bold"></span></li>
@@ -205,19 +205,19 @@ let flashbotsHtml = `
     <p>Blocks in the Future: The number of blocks in the future in which the bundle should be mined (e.g next block = 1 block in the future)</p>
     <p>Gas Fee: How much do you want to pay the miners to include your bundle? This amount will be paid for each transaction in the bundle.</p>
     <p>Base Fee: Flashbots will try to predict the baseFee of the future block you defined. We define, as a limit, double the predicted baseFee so that we increase the chances of the bundle to be included, even if the baseFee is larger than expected.</>
-    <p>Target Address: e.g <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
+    <p>Target Address: <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
     <p>Function Signature: <code>safeTransferFrom(address, address, uint256, uint256, bytes)</code></p>
     <p>Function Arguments: <code>0x8DbD1b711DC621e1404633da156FcC779e1c6f3E 0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc 42 1 0x </code></p>
-    <p>Transaction Value:0 </p>
-    <p>Gas Limit: 100000 </p>
+    <p>Transaction Value: <code>0</code> </p>
+    <p>Gas Limit: <code>100000</code></p>
     <input type="button" onclick="sendBundle();" value="Send Bundle!">
     <input type="button" onclick="addTx();" value="Add another Transaction">
     <br>
     <br>
     <label for="targetBlock"><b>Blocks in the future</b></label>
-    <input type="number" id="targetBlock" value="1">
+    <input type="number" id="targetBlock" value="3">
     <label for="priorityFee"><b>Priority Fee (GWEI, per transaction)</b></label>
-    <input type="number" id="priorityFee" value="3">
+    <input type="number" id="priorityFee" value="2">
     <h3>Network</h3>
     <label for="mainnet">Ethereum Mainnet (Default)</label><br>
     <input name="network" type="radio" id="mainnet" checked="true" value="Mainnet">
