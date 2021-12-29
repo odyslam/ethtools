@@ -1,5 +1,23 @@
 import { ethers } from 'ethers';
 
+let twitterHtml = `
+  <head>
+    <title>Ethtools</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠 </text></svg>">
+    <style>
+      body {
+        background-color:darkgreen;
+        color: lightblue;
+        }
+      a:visited {
+        color: blue;
+        }
+      input {height: 2em; width:25%;}
+    </style>
+  </head>
+  <script>
+  </script>
+`
 let flashbotsHtml = `
 <!DOCTYPE html>
   <head>
@@ -16,7 +34,7 @@ let flashbotsHtml = `
       input {height: 2em; width:25%;}
     </style>
   </head>
-  <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools@feat/flashbots/flashbots.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools/flashbots.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
   <script>
     function removeTx(div){
@@ -28,7 +46,7 @@ let flashbotsHtml = `
       addTx();
       window.ethereum.enable();
       const bundleId = uuid.v4();
-      let rpcEndpoint = "https://rpc.flashbots.net?bundle="+bundleId;
+      let rpcEndpoint = "https://rpc-staging.flashbots.net?bundle="+bundleId;
       document.getElementById("rpcEndpoint").innerHTML = rpcEndpoint;
     }
     function addTx(){
@@ -47,7 +65,7 @@ let flashbotsHtml = `
         <label for="txValue">Transaction value</label><br>
         <input type="number" id="txValue" name="txValue" value="0"></br>
         <label for="gasLimit">Gas Limit</label><br>
-        <input type="number" id="gasLimit" name="gasLimit" value="2100"></br>
+        <input type="number" id="gasLimit" name="gasLimit" value="21000"></br>
       </form>
       \`
       let txBlock = document.getElementById("txDef");
@@ -65,11 +83,12 @@ let flashbotsHtml = `
   }
 
   async function getBundle(id){
-    return await fetch("https://rpc.flashbots.net/bundle?id="+id);
+    let bundle = await fetch("https://rpc-staging.flashbots.net/bundle?id="+id);
+    return await bundle.json();
   }
 
   async function sendBundle() {
-      let bundleId = document.getElementById("rpcEndpoint").innerHTML;
+      let bundleId = document.getElementById("rpcEndpoint").innerHTML.split("=")[1];
       const enable = window.ethereum.enable()
       if(enable){
         const provider = new _ethers.providers.Web3Provider(window.ethereum);
@@ -132,9 +151,9 @@ let flashbotsHtml = `
           transactions.push(txBlock);
         });
         let counter = blocksInTheFuture;
-        transactions.forEach( (tx) => {
-          signer.sendTransaction(tx.transaction);
-        });
+        for (const index in transactions){
+          await signer.sendTransaction(transactions[index].transaction);
+        }
         const bundle = await getBundle(bundleId);
         const signedTransactions= await flashbotsProvider.signBundle(bundle.rawTxs.reverse());
         const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
@@ -320,7 +339,7 @@ let defaultHtml = `
       <b><a href="/deploy">/deploy</a></b>: Deploy a smart contract. You will need the constructor signature, constructor arguments and the bytecode of the smart contract.
     </p>
     <p>
-      <b><a href="/flashbots">/flashbots</a></b>: Easily submit a transaction bundle to Flashbots (🤖,⚡️) an arbitrary number of transactions of any kind, from value transfer to smart contract calls. Kudos to the Flashbots team for helping assisting me with the integration.
+      <b><a href="/tweetdrop">/tweetdrop</a></b>: Gather ENS names and Ethereum addresses from replies in a Twitter thread.
     </p>
   <body>
 </html>
@@ -557,6 +576,13 @@ async function handleRequest(request) {
         },
     })
   }
+  else if (pathname.startsWith("/tweetdrop")) {
+    return new Response(twitterHtml, {
+        headers: {
+          "content-type": "text/html;charset=UTF-8",
+        }
+    });
+  }
   else {
     return new Response(defaultHtml, {
             headers: {
@@ -564,11 +590,4 @@ async function handleRequest(request) {
             },
           })
   }
-
-
 }
-function isNumeric(value) {
-    return /^-?\d+$/.test(value);
-}
-
-
