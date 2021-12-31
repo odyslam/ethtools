@@ -1,5 +1,23 @@
 import { ethers } from 'ethers';
 
+let twitterHtml = `
+  <head>
+    <title>Ethtools</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠 </text></svg>">
+    <style>
+      body {
+        background-color:darkgreen;
+        color: lightblue;
+        }
+      a:visited {
+        color: blue;
+        }
+      input {height: 2em; width:25%;}
+    </style>
+  </head>
+  <script>
+  </script>
+`
 let flashbotsHtml = `
 <!DOCTYPE html>
   <head>
@@ -16,7 +34,7 @@ let flashbotsHtml = `
       input {height: 2em; width:25%;}
     </style>
   </head>
-  <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools@feat/flashbots/flashbots.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools/flashbots.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
   <script>
     function removeTx(div){
@@ -28,7 +46,7 @@ let flashbotsHtml = `
       addTx();
       window.ethereum.enable();
       const bundleId = uuid.v4();
-      let rpcEndpoint = "https://rpc.flashbots.net?bundle="+bundleId;
+      let rpcEndpoint = "https://rpc-staging.flashbots.net?bundle="+bundleId;
       document.getElementById("rpcEndpoint").innerHTML = rpcEndpoint;
     }
     function addTx(){
@@ -47,7 +65,7 @@ let flashbotsHtml = `
         <label for="txValue">Transaction value</label><br>
         <input type="number" id="txValue" name="txValue" value="0"></br>
         <label for="gasLimit">Gas Limit</label><br>
-        <input type="number" id="gasLimit" name="gasLimit" value="2100"></br>
+        <input type="number" id="gasLimit" name="gasLimit" value="21000"></br>
       </form>
       \`
       let txBlock = document.getElementById("txDef");
@@ -65,11 +83,12 @@ let flashbotsHtml = `
   }
 
   async function getBundle(id){
-    return await fetch("https://rpc.flashbots.net/bundle?id="+id);
+    let bundle = await fetch("https://rpc-staging.flashbots.net/bundle?id="+id);
+    return await bundle.json();
   }
 
   async function sendBundle() {
-      let bundleId = document.getElementById("rpcEndpoint").innerHTML;
+      let bundleId = document.getElementById("rpcEndpoint").innerHTML.split("=")[1];
       const enable = window.ethereum.enable()
       if(enable){
         const provider = new _ethers.providers.Web3Provider(window.ethereum);
@@ -85,13 +104,9 @@ let flashbotsHtml = `
           chainId = 5;
           flashbotsRelay = "https://relay-goerli.flashbots.net/";
         }
-        const blocksInTheFuture = document.getElementById("targetBlock").value;
+        const blocksInTheFuture = parseInt(document.getElementById("targetBlock").value);
         const GWEI = _ethers.BigNumber.from(10).pow(9)
         const priorityFee = GWEI.mul(parseInt(document.getElementById("priorityFee").value));
-        const blockNumber = await provider.getBlockNumber();
-        const block = await provider.getBlock();
-        const targetBlockNumber = blockNumber + blocksInTheFuture;
-        const maxBaseFeeInFutureBlock = 2 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
         let documentBlock = document.getElementById("txDef");
         const flashbotsProvider = await _FlashbotsBundleProvider.create(
           provider,
@@ -100,6 +115,10 @@ let flashbotsHtml = `
         )
         let transactions = [];
         let txObject= {};
+        const blockNumber = await provider.getBlockNumber();
+        const block = await provider.getBlock();
+        const targetBlockNumber = blockNumber + blocksInTheFuture;
+        const maxBaseFeeInFutureBlock = 2 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
         Array.from(documentBlock.children).forEach((tx) => {
           const address = tx.querySelector("#targetAddress").value;
           const txValue= tx.querySelector("#txValue").value;
@@ -132,12 +151,12 @@ let flashbotsHtml = `
           transactions.push(txBlock);
         });
         let counter = blocksInTheFuture;
-        transactions.forEach( (tx) => {
-          signer.sendTransaction(tx.transaction);
-        });
+        for (const index in transactions){
+          await signer.sendTransaction(transactions[index].transaction);
+        }
         const bundle = await getBundle(bundleId);
-        const signedTransactions= await flashbotsProvider.signBundle(bundle.rawTxs.reverse());
-        const simulation = await flashbotsProvider.simulate(signedTransactions, targetBlockNumber);
+        const orderedBundle = bundle.rawTxs.reverse();
+        const simulation = await flashbotsProvider.simulate(orderedBundle, targetBlockNumber);
         if ('error' in simulation) {
           window.alert("There was some error in the flashbots simulation, please read the bundle receipt");
           document.getElementById("receipt").innerHTML = simulation.error.message;
@@ -148,7 +167,6 @@ let flashbotsHtml = `
                  transactionBundle,
                  targetBlockNumber,
               );
-              window.alert("Bundle Submitted. Waiting...");
               if('error' in bundleSubmission){
                 window.alert("There was some error in the flashbots submission, please read the bundle receipt");
                 document.getElementById("receipt").innerHTML = bundleSubmission.error.message;
@@ -156,8 +174,8 @@ let flashbotsHtml = `
               const waitResponse = await flashbotsSubmission.wait();
               document.getelementbyid("receipt").innerhtml = _FlashbotsBundleResolution[waitResponse];
               if (waitResponse === _FlashbotsBundleResolution.BundleIncluded ){
-                window.alert("Your Bundle just got mined!, read the bundle receipt and visit etherscan to verify!");
                 provider.off('block');
+                window.alert("Your Bundle just got mined!, read the bundle receipt and visit etherscan to verify!");
               }
               else if (waitResponse === _FlashbotsBundleResolution.AccountNonceTooHigh){
                 window.alert("Flashbots encountered an error: AccountNonceTooHigh");
@@ -171,8 +189,11 @@ let flashbotsHtml = `
       }
   }
   </script>
+<header>
+  <h3><a href="/">👈Ethtools</a></h3>
+</header>
   <body>
-    <h1> Create and issue a flashbots bundle! </h1>
+    <h1> Create and issue a flashbots bundle 🤖 ⚡️ (Experimental)</h1>
     <h2> Instructions </h2>
     <ol>
       <li>Add the following RPC endpoint to Metamask: <span id="rpcEndpoint" style="font-weight:bold"></span></li>
@@ -183,22 +204,22 @@ let flashbotsHtml = `
       <li> An alert window will pop up to inform you on the success or failure of the submission. The receipt will be printed in the field at the end of the page.</li>
     <ol>
     <h2>Fields Reference</h2>
-    <p>Blocks in the Future: The number of blocks in the future in which the bundle should be mined (e.g next block = 1 block in the future)</p>
-    <p>Gas Fee: How much do you want to pay the miners to include your bundle? This amount will be paid for each transaction in the bundle.</p>
-    <p>Base Fee: Flashbots will try to predict the baseFee of the future block you defined. We define, as a limit, double the predicted baseFee so that we increase the chances of the bundle to be included, even if the baseFee is larger than expected.</>
-    <p>Target Address: e.g <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
-    <p>Function Signature: <code>safeTransferFrom(address, address, uint256, uint256, bytes)</code></p>
-    <p>Function Arguments: <code>0x8DbD1b711DC621e1404633da156FcC779e1c6f3E 0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc 42 1 0x </code></p>
-    <p>Transaction Value:0 </p>
-    <p>Gas Limit: 100000 </p>
+    <p><b>Blocks in the Future</b>: The number of blocks in the future in which the bundle should be mined (e.g next block = 1 block in the future)</p>
+    <p><b>Gas Fee</b>: How much do you want to pay the miners to include your bundle? This amount will be paid for each transaction in the bundle.</p>
+    <p><b>Base Fee</b>: Flashbots will try to predict the baseFee of the future block you defined. We define, as a limit, double the predicted baseFee so that we increase the chances of the bundle to be included, even if the baseFee is larger than expected.</>
+    <p><b>Target Address</b>: <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
+    <p><b>Function Signature</b>: <code>safeTransferFrom(address, address, uint256, uint256, bytes)</code></p>
+    <p><b>Function Arguments</b>: <code>0x8DbD1b711DC621e1404633da156FcC779e1c6f3E 0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc 42 1 0x </code></p>
+    <p><b>Transaction Value</b>: <code>0</code> </p>
+    <p><b>Gas Limit</b>: <code>100000</code></p>
     <input type="button" onclick="sendBundle();" value="Send Bundle!">
     <input type="button" onclick="addTx();" value="Add another Transaction">
     <br>
     <br>
     <label for="targetBlock"><b>Blocks in the future</b></label>
-    <input type="number" id="targetBlock" value="1">
+    <input type="number" id="targetBlock" value="3">
     <label for="priorityFee"><b>Priority Fee (GWEI, per transaction)</b></label>
-    <input type="number" id="priorityFee" value="3">
+    <input type="number" id="priorityFee" value="2">
     <h3>Network</h3>
     <label for="mainnet">Ethereum Mainnet (Default)</label><br>
     <input name="network" type="radio" id="mainnet" checked="true" value="Mainnet">
@@ -318,9 +339,6 @@ let defaultHtml = `
     <p> The following webpages offer more complex functionality via simple input fields on the webpage. You don't have to encode any information in the URL.</p>
     <p>
       <b><a href="/deploy">/deploy</a></b>: Deploy a smart contract. You will need the constructor signature, constructor arguments and the bytecode of the smart contract.
-    </p>
-    <p>
-      <b><a href="/flashbots">/flashbots</a></b>: Easily submit a transaction bundle to Flashbots (🤖,⚡️) an arbitrary number of transactions of any kind, from value transfer to smart contract calls. Kudos to the Flashbots team for helping assisting me with the integration.
     </p>
   <body>
 </html>
@@ -557,6 +575,13 @@ async function handleRequest(request) {
         },
     })
   }
+  else if (pathname.startsWith("/tweetdrop")) {
+    return new Response(twitterHtml, {
+        headers: {
+          "content-type": "text/html;charset=UTF-8",
+        }
+    });
+  }
   else {
     return new Response(defaultHtml, {
             headers: {
@@ -564,11 +589,4 @@ async function handleRequest(request) {
             },
           })
   }
-
-
 }
-function isNumeric(value) {
-    return /^-?\d+$/.test(value);
-}
-
-
