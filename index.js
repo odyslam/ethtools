@@ -340,9 +340,6 @@ let defaultHtml = `
     <p>
       <b><a href="/deploy">/deploy</a></b>: Deploy a smart contract. You will need the constructor signature, constructor arguments and the bytecode of the smart contract.
     </p>
-    <p>
-      <b><a href="/tweetdrop">/tweetdrop</a></b>: Gather ENS names and Ethereum addresses from replies in a Twitter thread.
-    </p>
   <body>
 </html>
 `
