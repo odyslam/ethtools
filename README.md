@@ -14,9 +14,9 @@ Yes, please. Create an issue with your idea/suggestion or just submit a PR.
 
 ### Project Structure
 
-`index.js`: Entrypoint file for the cloudflare worker. It also contains the HTML (and JS) code that is served to the user.
-`webpack.config.js`: Used to pack the source files for the cloudflare worker. Wrangler needs this file to know how to package the various source files into a single bundle that will be run by the worker.
-`wrangler.toml`: Configuration for our wrangler/Cloudflare worker setup.
+- `index.js`: Entrypoint file for the cloudflare worker. It also contains the HTML (and JS) code that is served to the user.
+- `webpack.config.js`: Used to pack the source files for the cloudflare worker. Wrangler needs this file to know how to package the various source files into a single bundle that will be run by the worker.
+- `wrangler.toml`: Configuration for our wrangler/Cloudflare worker setup.
 
 ### How to contribute
 1. Fork the project and clone it to your dev machine
