@@ -167,12 +167,12 @@ let flashbotsHtml = `
                  transactionBundle,
                  targetBlockNumber,
               );
-              if('error' in bundleSubmission){
+              if('error' in flashbotsSubmission){
                 window.alert("There was some error in the flashbots submission, please read the bundle receipt");
                 document.getElementById("receipt").innerHTML = bundleSubmission.error.message;
               }
               const waitResponse = await flashbotsSubmission.wait();
-              document.getelementbyid("receipt").innerhtml = _FlashbotsBundleResolution[waitResponse];
+              document.getElementById("receipt").innerHTML= _FlashbotsBundleResolution[waitResponse];
               if (waitResponse === _FlashbotsBundleResolution.BundleIncluded ){
                 provider.off('block');
                 window.alert("Your Bundle just got mined!, read the bundle receipt and visit etherscan to verify!");
