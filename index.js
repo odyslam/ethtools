@@ -154,17 +154,35 @@ let flashbotsHtml = `
         for (const index in transactions){
           await signer.sendTransaction(transactions[index].transaction);
         }
-        const bundle = await getBundle(bundleId);
-        const orderedBundle = bundle.rawTxs.reverse();
+        const protectBundle = await getBundle(bundleId);
+        let orderedBundle= [];
+        for(protectTxCounter in protectBundle.rawTxs){
+          let signedTx = _ethers.utils.parseTransaction(protectBundle.rawTxs[protectTxCounter])
+          for(rawTxCounter in transactions){
+            let rawTx = transactions[rawTxCounter].transaction;
+            if(rawTx.data == signedTx.data &&
+               rawTx.maxFeePerGas == parseInt(signedTx.maxFeePerGas) &&
+               rawTx.value == parseInt(signedTx.value) &&
+               rawTx.to == signedTx.to
+            ){
+              orderedBundle[rawTxCounter] = protectBundle.rawTxs[protectTxCounter];
+            }
+          }
+        }
         const simulation = await flashbotsProvider.simulate(orderedBundle, targetBlockNumber);
         if ('error' in simulation) {
           window.alert("There was some error in the flashbots simulation, please read the bundle receipt");
           document.getElementById("receipt").innerHTML = simulation.error.message;
         } else {
-          window.alert("Flashbots simulation was a success: " + JSON.stringify(simulation, null, 2));
+          let finalBundle = [];
+          for(counter in orderedBundle){
+            finalBundle.push({"signedTransaction": orderedBundle[counter]});
+          }
+          window.alert("Flashbots simulation was a success! Read the Bundle receipt for more info.");
+          document.getElementById("receipt").innerHTML = "<p>Simulation Result</p><p>" + JSON.stringify(simulation, null, 2) + "</p>";
           provider.on('block', async (blockNumber) => {
               const flashbotsSubmission= await flashbotsProvider.sendBundle(
-                 transactionBundle,
+                 finalBundle,
                  targetBlockNumber,
               );
               if('error' in flashbotsSubmission){
