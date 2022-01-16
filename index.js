@@ -24,6 +24,10 @@ let flashbotsHtml = `
     <title>Ethtools</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠 </text></svg>">
     <style>
+
+    li{
+  margin: 10px 0;
+}
       body {
         background-color:darkgreen;
         color: lightblue;
@@ -116,7 +120,7 @@ let flashbotsHtml = `
         let txObject= {};
         const blockNumber = await provider.getBlockNumber();
         const block = await provider.getBlock();
-        const targetBlockNumber = blockNumber + blocksInTheFuture;
+        let targetBlockNumber = blockNumber + blocksInTheFuture;
         const maxBaseFeeInFutureBlock = 3 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
         Array.from(documentBlock.children).forEach((tx) => {
           const address = tx.querySelector("#targetAddress").value;
@@ -150,6 +154,7 @@ let flashbotsHtml = `
           transactions.push(txBlock);
         });
         let counter = blocksInTheFuture;
+
         for (const index in transactions){
           window.alert("Please use metamask to switch the account from which you want to send the transaction number " + index + ".\\nDon't close this window until metamask is set to the correct account.");
           const signer = provider.getSigner();
@@ -180,9 +185,10 @@ let flashbotsHtml = `
           for(counter in orderedBundle){
             finalBundle.push({"signedTransaction": orderedBundle[counter]});
           }
-          window.alert("Flashbots simulation was a success! Read the Bundle receipt for more info.");
+          window.alert("Flashbots simulation was a success! Now the bundle will be submitted on every new block until it's mined. Read the Bundle receipt for more info.");
           document.getElementById("receipt").innerHTML = "<p>Simulation Result</p><p>" + JSON.stringify(simulation, null, 2) + "</p>";
           provider.on('block', async (blockNumber) => {
+              targetBlockNumber = blockNumber + blocksInTheFuture;
               const flashbotsSubmission= await flashbotsProvider.sendBundle(
                  finalBundle,
                  targetBlockNumber,
@@ -214,14 +220,21 @@ let flashbotsHtml = `
 </header>
   <body>
     <h1> Create and issue a flashbots bundle 🤖 ⚡️ (Experimental)</h1>
-    <h2> Instructions </h2>
+    <p> This page uses a special Flashbots RPC endpoint because Metamask does not allow to sign a transaction without actually sending it to an RPC endpoint. So we sign them, send them to be cached privately by flashbots and finaly, fetch them. The raw signed transcations are processed by the Flashbots Bundle library and sent directly to the Flashbots private relay. All this is done on the browser and the only backend that is used is the flashbots cache/RPC endpoint.</p>
+    <p> The source file is very simple and I invite you to <a target="_blank" href="https://github.com/odyslam/ethtools/blob/dbfebee820e303bd027d0dd005693df138119f8f/index.js#L90">take a look</a> and verify it for yourself.</p>
+    <h2> Read the Instructions </h2>
     <ol>
       <li>Add the following RPC endpoint to Metamask: <span id="rpcEndpoint" style="font-weight:bold"></span></li>
-      <li>If you are not sure how to do (1), watch <a href="">this video</a>. If you have done this step before, just update the RPC endpoint you added before with this new one.</li>
+      <li>If you are not sure how to do (1), watch <a target="_blank" href="https://www.loom.com/share/916a7da53d034dbe9ca77f1b9d90e7fa">this video</a>. <b>Note that</b> you will have to add a <b>new</b> network with every <b>refresh</b> of this page, as every <b>id</b> is tied to a unique bundle. Metamask does not allow to edit the RPC endpoint of an existing network, apparently.🤷 </li>
       <li>Add transactions and populate the fields according to the examples below</li>
-      <li>When you click on <b>Send the Bundle!</b> metamask will prompt you to sign the transactions</li>
-      <li>The transactions will be sent to flashbots as a bundle to be executed all in the same block. </li>
-      <li> An alert window will pop up to inform you on the success or failure of the submission. The receipt will be printed in the field at the end of the page.</li>
+      <li>When you click on <b>Send the Bundle!</b> metamask will prompt you to sign the transactions. For every transaction, a pop-up window will open to remind you to change to the metamask account with which the particular transaction will be signed. This is important as in a whitehat operation, you might want to bundle transactions from different accounts.</li>
+      <li>The transactions will be sent to flashbots as a bundle to be executed all in the same block. The bundle will be submitted to flashbots on every block to be executed in <code>blocks in the future</code>, until it's mined.</li>
+      <li> An alert window will pop up to inform you on the success or failure of the submission. The receipt will be printed <b>Bundle Receipt</b> at the end of the page.
+      <li>  📍<b>IMPORTANT</b> After You are done with the website, go to metamask and <a target="_blank" href="https://www.loom.com/share/6bc8a8a161f749a9a9dd84c190634d47"> reset the accounts</a> that you used to send/sign transactions. Metamask will attempt to resend the transactions as soon as you switch networks. As the transactions are not issued on the blockchain, but simply cached to the Flashbots endpoint and then brought back to be submitted via a bundle, Metamask assumes that the transactions failed and sends them again.</li>
+      <li>  📍 If the receipt shows <code>BlocMinedWithoutInclusion</code>, that's OK. You will get this message until the bundle is included. To increase the chance of inclusion, you might want to increase the <b>Priority Fee</b>.</li>
+      <li>  📍 If the receipt shows <code>nonce too low, tx X state Y</code>, that means that metamask has messed up the tx nonces. Send the Bundle again and manually set the nonce of the first transaction to the number <code>Y</code> shown in the error message.</li>
+      <li>  📍  Currently, to offer a better UX, we set the <code>maxBaseFee</code> that you are willing to pay to 3 times the <code>maxBaseFee</code> that Flashbts calculates for the block that will include your Bundle. The block number is computed as: <code>currentBlockNumber + blocksInTheFuture</code>. This is an <b> UPPER BOUND</b> of the <code>baseFee</code> and not what you will actually pay. This is done so that there is a margin for error to the calculated <code>maxBaseFee</code> and you don't have to sign the transactions again every time the actual <code>baseFee</code> is higher than the <code>maxBaseFee</code> that Flashbots calculated. The higher margin for error thus might incur more ETH left over to the compromised account, as you will need to send a more ETH to cover the potential gas costs for the larger <code>maxBaseFee</code>. You can read more about this on <a href="https://github.com/flashbots/ethers-provider-flashbots-bundle#gas-prices-and-eip-1559" target="_blank">GitHub</a>.</li>
+      <li>  📍 If you want to change something to the Bundle, you can make the change and click on <b>Send The Bundle!</b. It will stop sending the previous bundle and start submitting the new one.</l>
     <ol>
     <h2>Fields Reference</h2>
     <p><b>Blocks in the Future</b>: The number of blocks in the future in which the bundle should be mined (e.g next block = 1 block in the future)</p>
