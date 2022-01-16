@@ -93,7 +93,6 @@ let flashbotsHtml = `
       if(enable){
         const provider = new _ethers.providers.Web3Provider(window.ethereum);
         provider.off('block');
-        const signer = provider.getSigner();
         const authSigner = _ethers.Wallet.createRandom();
         let chainId;
         let flashbotsRelay = "https://relay.epheph.com/"
@@ -118,7 +117,7 @@ let flashbotsHtml = `
         const blockNumber = await provider.getBlockNumber();
         const block = await provider.getBlock();
         const targetBlockNumber = blockNumber + blocksInTheFuture;
-        const maxBaseFeeInFutureBlock = 2 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
+        const maxBaseFeeInFutureBlock = 3 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
         Array.from(documentBlock.children).forEach((tx) => {
           const address = tx.querySelector("#targetAddress").value;
           const txValue= tx.querySelector("#txValue").value;
@@ -146,12 +145,15 @@ let flashbotsHtml = `
           }
           txBlock = {
             "transaction": eip1559Transaction,
-            "signer": signer
+            "signer": null
             }
           transactions.push(txBlock);
         });
         let counter = blocksInTheFuture;
         for (const index in transactions){
+          window.alert("Please use metamask to switch the account from which you want to send the transaction number " + index + ".\\nDon't close this window until metamask is set to the correct account.");
+          const signer = provider.getSigner();
+          transactions[index].signer = signer;
           await signer.sendTransaction(transactions[index].transaction);
         }
         const protectBundle = await getBundle(bundleId);
