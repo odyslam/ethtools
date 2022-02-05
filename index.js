@@ -211,11 +211,7 @@ async function setGlobal(){
       }
   }
   async function sendBundle() {
-        if(!enable){
-          window.alert("You need to enable Metamask to use the website");
-          return null;
-        }
-        else if (!globalVarSet){
+        if (!globalVarSet){
           window.alert("Please choose Priority Fee and Blocks in the Future and click on 'Save Global variables'");
           return null;
         }
@@ -294,13 +290,16 @@ async function setGlobal(){
       <li>Add the following RPC endpoint to Metamask, with <b>Chain ID = 1</b> and <b>Symbol = ETH</b>: <span id="rpcEndpoint" style="font-weight:bold"></span></li>
       <li>If you are not sure how to do (1), watch <a target="_blank" href="https://www.loom.com/share/916a7da53d034dbe9ca77f1b9d90e7fa">this video</a>. <b>Note that</b> you will have to add a <b>new</b> network with every <b>refresh</b> of this page, as every <b>bundle id</b>(bundle=...) is tied to a unique bundle. Metamask does not allow to edit the RPC endpoint of an existing network, apparently.🤷 </li>
       <li>Add transactions and populate the fields according to the examples below</li>
-      <li>When you click on <b>Send the Bundle!</b> metamask will prompt you to sign the transactions. For every transaction, a pop-up window will open to remind you to change to the metamask account with which the particular transaction will be signed. This is important as in a whitehat operation, you might want to bundle transactions from different accounts.</li>
+      <li>You can change the Max Base Gas fee for every transaction. The number you see is a multiple to the MAX gas that flashbots expect to be required for the base fee. The larder the multiple, the larger the max fee you allow to pay and thus higher chances that your transaction will be included in the block. If you set a low multiple (e.g 1x) and the base gas fee is higher for that block, the bundle will not be included.</li>
+      <li>Populate the "Blocks in the Future" and "Priority Fee" fields and click on "save global variables". This is required to sign the transactions, are these fields are used in the transactions themselves.</li>
+      <li>Click on "Sign Transaction" to sign the transaction. Make sure you switch Metamask to the account you want to sign the transaction with.</li>
+      <li>After you are finished, click on "Send Bundle!"</li>
       <li>The transactions will be sent to flashbots as a bundle to be executed all in the same block. The bundle will be submitted to flashbots on every block to be included in <code>blocks in the future</code>.</li>
       <li> An alert window will pop up to inform you on the success or failure of the submission. The receipt will be printed <b>Bundle Receipt</b> at the end of the page.
       <li>  📍 <b>IMPORTANT</b> After You are done with the website, go to metamask and <a target="_blank" href="https://www.loom.com/share/6bc8a8a161f749a9a9dd84c190634d47"> reset the accounts</a> that you used to send/sign transactions. Metamask will attempt to resend the transactions as soon as you switch networks. As the transactions are not issued on the blockchain, but simply cached to the Flashbots endpoint and then brought back to be submitted via a bundle, Metamask assumes that the transactions failed and sends them again.</li>
       <li>  📍 If the receipt shows <code>BlocMinedWithoutInclusion</code>, that's OK. You will get this message until the bundle is included. To increase the chance of inclusion, you might want to increase the <b>Priority Fee</b>.</li>
       <li>  📍 If the receipt shows <code>nonce too low, tx X state Y</code>, that means that metamask has messed up the tx nonces. Send the Bundle again and manually set the nonce of the appropriate transaction to the number <code>Y</code> shown in the error message. Alternatively, you can reset your metamask Accounts, clearing the tx queue and fixing the nonces.</li>
-      <li>  📍  Currently, to offer a better UX, we set the <code>maxBaseFee</code> that you are willing to pay to 3 times the <code>maxBaseFee</code> that Flashbts predicts for the block that will include your Bundle. The block number is computed as: <code>currentBlockNumber + blocksInTheFuture</code>. This is an <b> UPPER BOUND</b> of the <code>baseFee</code> and not what you will actually pay. This is done so that there is a margin for error to the calculated <code>maxBaseFee</code> and you don't have to sign the transactions again every time the actual <code>baseFee</code> is higher than the predicted <code>maxBaseFee</code>. This means that you will need to send more ETH to an account in order to potentially cover the higher <code>maxBaseFee</code>. You can read more about this on <a href="https://github.com/flashbots/ethers-provider-flashbots-bundle#gas-prices-and-eip-1559" target="_blank">GitHub</a>.</li>
+      <li>  📍  Currently, to offer a better UX, we set the default <code>maxBaseFee</code> that you are willing to pay to 3 times the <code>maxBaseFee</code> that Flashbts predicts for the block that will include your Bundle. The block number is computed as: <code>currentBlockNumber + blocksInTheFuture</code>. This is an <b> UPPER BOUND</b> of the <code>baseFee</code> and not what you will actually pay. This is done so that there is a margin for error to the calculated <code>maxBaseFee</code> and you don't have to sign the transactions again every time the actual <code>baseFee</code> is higher than the predicted <code>maxBaseFee</code>. This means that you will need to send more ETH to an account in order to potentially cover the higher <code>maxBaseFee</code>. You can read more about this on <a href="https://github.com/flashbots/ethers-provider-flashbots-bundle#gas-prices-and-eip-1559" target="_blank">GitHub</a>.</li>
       <li>  📍 If you want to change something to the Bundle, you can make the change and click on <b>Send The Bundle!</b. It will stop sending the previous bundle and start submitting the new one.</l>
     <ol>
     <h2>Fields Reference</h2>
