@@ -41,24 +41,40 @@ let flashbotsHtml = `
   <script src="https://cdn.jsdelivr.net/gh/odyslam/ethtools/flashbots.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
   <script>
-    function removeTx(div){
-      console.log(div);
-      div.remove();
-      calculateIndex();
-    }
-    window.onload = function(){
+
+  // Global Variables
+  let transactions = [];
+  let bundle;
+  let flashbotsProvider;
+  let blocksInTheFuture;
+  let priorityFee;
+  let blockNumber;
+  let enable;
+  let provider;
+  const GWEI = _ethers.BigNumber.from(10).pow(9)
+  let globalVarSet = false;
+  let chainId;
+  let bundleId;
+
+   window.onload = function(){
       addTx();
-      window.ethereum.enable();
-      const bundleId = uuid.v4();
+      bundleId = uuid.v4();
       let rpcEndpoint = "https://rpc-staging.flashbots.net?bundle="+bundleId;
       document.getElementById("rpcEndpoint").innerHTML = rpcEndpoint;
     }
-    function addTx(){
+
+
+  function removeTx(element){
+      div.remove();
+      calculateIndex();
+    }
+  function addTx(){
       let str = \`
       <form class="tx" style="margin-top: 15px;">
         <p>---------------------------------------------------------</p>
-       <h3> Transaction number <span class="txIndex"></span></h3>
-        <input type="button" onclick="removeTx(this.parentElement);" value="Remove tx">
+       <h3> Transaction number <span id="txIndex"></span> signed with address <span id="address"></span> </h3>
+        <input type="button" onclick="removeTx(this.parentElement);" value="Remove Transaction">
+        <input type="button" onclick="signTx(this.parentElement);" value="Sign Transaction">
         <br>
         <label for="addr">Target Address</label><br>
         <input type="text" id="targetAddress" name="targetAddress"></br>
@@ -70,18 +86,20 @@ let flashbotsHtml = `
         <input type="number" id="txValue" name="txValue" value="0"></br>
         <label for="gasLimit">Gas Limit</label><br>
         <input type="number" id="gasLimit" name="gasLimit" value="21000"></br>
+        <label for="maxBaseGasFee">Max Base Gas Fee (simulated multiple)</label><br>
+        <input type="number" id="maxBaseGasFee" name="maxBaseGasFee" step="1" value="3">
       </form>
       \`
       let txBlock = document.getElementById("txDef");
       txBlock.insertAdjacentHTML( 'beforeend', str );
       calculateIndex();
-    }
+  }
+
   function calculateIndex(){
     let el = document.getElementById("txDef").children;
     let counter = 0;
     Array.from(el).forEach( (child) => {
-      let span = child.getElementsByClassName("txIndex")[0];
-      span.innerHTML = counter;
+      child.querySelector("h3 > #txIndex").innerHTML = counter;
       counter++;
       });
   }
@@ -91,82 +109,131 @@ let flashbotsHtml = `
     return await bundle.json();
   }
 
-  async function sendBundle() {
-      let bundleId = document.getElementById("rpcEndpoint").innerHTML.split("=")[1];
-      const enable = window.ethereum.enable()
-      if(enable){
-        const provider = new _ethers.providers.Web3Provider(window.ethereum);
-        provider.off('block');
-        const authSigner = _ethers.Wallet.createRandom();
-        let chainId;
-        let flashbotsRelay = "https://relay.epheph.com/"
-        if (document.getElementById("mainnet").checked) {
-          chainId = 1;
-        }
-        else {
-          chainId = 5;
-          flashbotsRelay = "https://relay-goerli.flashbots.net/";
-        }
-        const blocksInTheFuture = parseInt(document.getElementById("targetBlock").value);
-        const GWEI = _ethers.BigNumber.from(10).pow(9)
-        const priorityFee = GWEI.mul(parseInt(document.getElementById("priorityFee").value));
-        let documentBlock = document.getElementById("txDef");
-        const flashbotsProvider = await _FlashbotsBundleProvider.create(
-          provider,
-          authSigner,
-          flashbotsRelay
-        )
-        let transactions = [];
-        let txObject= {};
-        const blockNumber = await provider.getBlockNumber();
-        const block = await provider.getBlock();
-        let targetBlockNumber = blockNumber + blocksInTheFuture;
-        const maxBaseFeeInFutureBlock = 3 * _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture)
-        Array.from(documentBlock.children).forEach((tx) => {
-          const address = tx.querySelector("#targetAddress").value;
-          const txValue= tx.querySelector("#txValue").value;
-          const ABI = tx.querySelector("#functionSignature").value;
-          const calldata =  tx.querySelector("#functionArguments").value;
-          const gasLimit = tx.querySelector("#gasLimit").value;
-          let data = '0x';
-          let value = 0;
-          if(ABI != "" && calldata != ""){
-            let iface = new _ethers.utils.Interface(["function " + ABI]);
-            let string = calldata.split(" ");
-            data = iface.encodeFunctionData(ABI, string);
-          }
-          value = txValue;
-          tx["address"] = address;
-          const eip1559Transaction = {
-              to: address,
-              type: 2,
-              maxFeePerGas: parseInt(maxBaseFeeInFutureBlock),
-              maxPriorityFeePerGas: parseInt(priorityFee),
-              gasLimit: parseInt(gasLimit),
-              data: data,
-              value: parseInt(value),
-              chainId: chainId
-          }
-          txBlock = {
-            "transaction": eip1559Transaction,
-            "signer": null
-            }
-          transactions.push(txBlock);
-        });
-        let counter = blocksInTheFuture;
 
-        for (const index in transactions){
-          window.alert("Please use metamask to switch the account from which you want to send the transaction number " + index + ".\\nDon't close this window until metamask is set to the correct account and the metamask window is closed.");
-          const signer = provider.getSigner();
-          transactions[index].signer = signer;
-          await signer.sendTransaction(transactions[index].transaction);
+async function setGlobal(){
+    enable = window.ethereum.enable();
+      if(!enable){
+        window.alert("You need to enable Metamask to use the website");
+        return null;
+      }
+      provider = new _ethers.providers.Web3Provider(window.ethereum);
+      const authSigner = _ethers.Wallet.createRandom();
+      chainId;
+      let flashbotsRelay = "https://relay.epheph.com/"
+      if (document.getElementById("mainnet").checked) {
+        chainId = 1;
+      }
+      else {
+        chainId = 5;
+        flashbotsRelay = "https://relay-goerli.flashbots.net/";
+      }
+      flashbotsProvider = await _FlashbotsBundleProvider.create(
+        provider,
+        authSigner,
+        flashbotsRelay
+      )
+      priorityFee = GWEI.mul(parseInt(document.getElementById("priorityFee").value));
+      blocksInTheFuture = parseInt(document.getElementById("targetBlock").value);
+      blockNumber = await provider.getBlockNumber();
+      targetBlockNumber = blockNumber + blocksInTheFuture;
+      document.getElementById("priorityFee").setAttribute('disabled', 'disabled');
+      document.getElementById("targetBlock").setAttribute('disabled', 'disabled');
+      globalVarSet = true;
+      window.alert("Priority Fee is set to " + priorityFee + " and the target block number is " + targetBlockNumber + " which is " + blocksInTheFuture + " blocks away. To change this, you will need to reset Global Variables and sign again all the transactions.");
+}
+
+ function resetGlobal(){
+    transactions = [];
+    globalVarSet = false;
+    bundle = null;
+    blocksInTheFuture = null;
+    blockNumber = null;
+    priorityFee = null;
+    chainid = null;
+    document.getElementById("priorityFee").removeAttribute('disabled');
+    document.getElementById("targetBlock").removeAttribute('disabled');
+    window.alert("You can now create a new bundle and set different a)transactions, b) Priority Fee and, c) Blocks in the Future");
+ }
+
+  async function signTx(element){
+      if (!globalVarSet) {
+        window.alert("You need first to choose Priority Fee and Blocks in the Future and click on 'Save Global variables'");
+        return null;
+      }
+      const block = await provider.getBlock();
+      priorityFee = GWEI.mul(parseInt(document.getElementById("priorityFee").value));
+      const blocksInTheFuture = parseInt(document.getElementById("targetBlock").value);
+      let documentBlock = document.getElementById("txDef");
+      if (flashbotsProvider == null) {
+        setGlobal();
+      }
+      let txObject= {};
+      const maxBaseFeeInFutureBlock = _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture) * parseInt(element.querySelector("#maxBaseGasFee").value);
+      const address = element.querySelector("#targetAddress").value;
+      let value = _ethers.BigNumber.from(element.querySelector("#txValue").value);
+      const ABI = element.querySelector("#functionSignature").value;
+      const calldata =  element.querySelector("#functionArguments").value;
+      const gasLimit = element.querySelector("#gasLimit").value;
+      const txIndex = parseInt(element.querySelector("h3 > #txIndex").innerHTML);
+      let data = '0x';
+      if(value == ""){
+        value = 0;
+      }
+      if(ABI != "" && calldata != ""){
+        let iface = new _ethers.utils.Interface(["function " + ABI]);
+        let string = calldata.split(" ");
+        data = iface.encodeFunctionData(ABI, string);
+      }
+      const eip1559Transaction = {
+          to: address,
+          type: 2,
+          maxFeePerGas: maxBaseFeeInFutureBlock,
+          maxPriorityFeePerGas: parseInt(priorityFee),
+          gasLimit: parseInt(gasLimit),
+          data: data,
+          value: parseInt(value),
+          chainId: chainId
+      }
+      transactions[txIndex] = {
+          "transaction": eip1559Transaction,
+          "signer": null
+          }
+      const signer = provider.getSigner();
+      transactions[txIndex].signer = signer;
+      try {
+        await signer.sendTransaction(transactions[txIndex].transaction);
+        let account = await signer.getAddress()
+        window.alert("Transaction number " + txIndex + " was signed succesfully with account: " + account);
+        element.querySelector("#address").innerHTML = account ;
+      }
+      catch(error) {
+        window.alert("Got error " + error.code + " when trying to sign the transaction: " + error.message);
+      }
+  }
+  async function sendBundle() {
+        if(!enable){
+          window.alert("You need to enable Metamask to use the website");
+          return null;
         }
+        else if (!globalVarSet){
+          window.alert("Please choose Priority Fee and Blocks in the Future and click on 'Save Global variables'");
+          return null;
+        }
+        // If this function has been already called, remove the old event listener
+        provider.off('block');
         const protectBundle = await getBundle(bundleId);
         let orderedBundle= [];
+        // Often, metamask will send to the RPC endpoint older, already signed transactions. That means that the cache will
+        // often return a mix of the transactions we sent plus the transactions that metamask sent. We need to deduplicate and make sure
+        // we only use the signed Transactions that we actually signed in this session of the app. The most unique identifier is 'maxFeePerGas'.
+        console.log(protectBundle);
+        console.log(transactions);
         for(protectTxCounter in protectBundle.rawTxs){
           let signedTx = _ethers.utils.parseTransaction(protectBundle.rawTxs[protectTxCounter])
+          console.log(signedTx);
           for(rawTxCounter in transactions){
             let rawTx = transactions[rawTxCounter].transaction;
+            console.log(rawTx);
             if(rawTx.data == signedTx.data &&
                rawTx.maxFeePerGas == parseInt(signedTx.maxFeePerGas) &&
                rawTx.value == parseInt(signedTx.value) &&
@@ -175,6 +242,10 @@ let flashbotsHtml = `
               orderedBundle[rawTxCounter] = protectBundle.rawTxs[protectTxCounter];
             }
           }
+        }
+        if(orderedBundle == []){
+          window.alert("No signed transactions were found in the Bundle. Please sign the transactions first");
+          return null;
         }
         const simulation = await flashbotsProvider.simulate(orderedBundle, targetBlockNumber);
         if ('error' in simulation) {
@@ -208,10 +279,6 @@ let flashbotsHtml = `
                 provider.off('block');
               }
           });
-        }
-      }
-      else {
-        window.alert("Metamask is disabled. Please enable Metamask");
       }
   }
   </script>
@@ -246,10 +313,12 @@ let flashbotsHtml = `
     <p><b>Gas Limit</b>: <code>100000</code></p>
     <input type="button" onclick="sendBundle();" value="Send Bundle!">
     <input type="button" onclick="addTx();" value="Add another Transaction">
+    <input type="button" onclick="setGlobal();" value="Set Global variables">
+    <input type="button" onclick="resetGlobal();" value="Reset Global variables">
     <br>
     <br>
     <label for="targetBlock"><b>Blocks in the future</b></label>
-    <input type="number" id="targetBlock" value="3">
+    <input type="number" id="targetBlock" value="4">
     <label for="priorityFee"><b>Priority Fee (GWEI, per transaction)</b></label>
     <input type="number" id="priorityFee" value="2">
     <h3>Network</h3>
@@ -286,7 +355,6 @@ let deployHtml = `
 //        }
         args = args.join(',');
         const contractABI = [constructor];
-        console.log(contractABI, args, bytecode, signer);
         const factory = new ethers.ContractFactory(contractABI, bytecode, signer);
         let command = "factory.deploy(" + args + ")";
         const contract = await eval(command);
