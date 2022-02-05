@@ -157,7 +157,7 @@ async function setGlobal(){
 
   async function signTx(element){
       if (!globalVarSet) {
-        window.alert("You need first to choose Priority Fee and Blocks in the Future and click on 'Save Global variables'");
+        window.alert("You need first to choose Priority Fee and Blocks in the Future and click on 'Set Global variables'");
         return null;
       }
       const block = await provider.getBlock();
@@ -212,7 +212,7 @@ async function setGlobal(){
   }
   async function sendBundle() {
         if (!globalVarSet){
-          window.alert("Please choose Priority Fee and Blocks in the Future and click on 'Save Global variables'");
+          window.alert("Please choose Priority Fee and Blocks in the Future and click on 'Set Global variables'");
           return null;
         }
         // If this function has been already called, remove the old event listener
@@ -291,7 +291,8 @@ async function setGlobal(){
       <li>If you are not sure how to do (1), watch <a target="_blank" href="https://www.loom.com/share/916a7da53d034dbe9ca77f1b9d90e7fa">this video</a>. <b>Note that</b> you will have to add a <b>new</b> network with every <b>refresh</b> of this page, as every <b>bundle id</b>(bundle=...) is tied to a unique bundle. Metamask does not allow to edit the RPC endpoint of an existing network, apparently.🤷 </li>
       <li>Add transactions and populate the fields according to the examples below</li>
       <li>You can change the Max Base Gas fee for every transaction. The number you see is a multiple to the MAX gas that flashbots expect to be required for the base fee. The larder the multiple, the larger the max fee you allow to pay and thus higher chances that your transaction will be included in the block. If you set a low multiple (e.g 1x) and the base gas fee is higher for that block, the bundle will not be included.</li>
-      <li>Populate the "Blocks in the Future" and "Priority Fee" fields and click on "save global variables". This is required to sign the transactions, are these fields are used in the transactions themselves.</li>
+      <li>Populate the "Blocks in the Future" and "Priority Fee" fields and click on "Set Global Variables". This is required to sign the transactions, are these fields are used in the transactions themselves.</li>
+      <li>You can reset the Global Variables at any time, by simply clicking on the "Reset Global Variables" button. You will need to sign all the transactions again.</li>
       <li>Click on "Sign Transaction" to sign the transaction. Make sure you switch Metamask to the account you want to sign the transaction with.</li>
       <li>After you are finished, click on "Send Bundle!"</li>
       <li>The transactions will be sent to flashbots as a bundle to be executed all in the same block. The bundle will be submitted to flashbots on every block to be included in <code>blocks in the future</code>.</li>
