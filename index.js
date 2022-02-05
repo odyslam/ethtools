@@ -82,7 +82,7 @@ let flashbotsHtml = `
         <input type="text" id="functionSignature" name="functionSignature"></br>
         <label for="args">Function Arguments</label><br>
         <input type="text" id="functionArguments" name="functionArguments"></br>
-        <label for="txValue">Transaction value</label><br>
+        <label for="txValue">Transaction value (in Ether)</label><br>
         <input type="number" id="txValue" name="txValue" value="0"></br>
         <label for="gasLimit">Gas Limit</label><br>
         <input type="number" id="gasLimit" name="gasLimit" value="21000"></br>
@@ -170,15 +170,12 @@ async function setGlobal(){
       let txObject= {};
       const maxBaseFeeInFutureBlock = _FlashbotsBundleProvider.getMaxBaseFeeInFutureBlock(block.baseFeePerGas, blocksInTheFuture) * parseInt(element.querySelector("#maxBaseGasFee").value);
       const address = element.querySelector("#targetAddress").value;
-      let value = _ethers.BigNumber.from(element.querySelector("#txValue").value);
+      let value = _ethers.utils.parseEther(element.querySelector("#txValue").value);
       const ABI = element.querySelector("#functionSignature").value;
       const calldata =  element.querySelector("#functionArguments").value;
       const gasLimit = element.querySelector("#gasLimit").value;
       const txIndex = parseInt(element.querySelector("h3 > #txIndex").innerHTML);
       let data = '0x';
-      if(value == ""){
-        value = 0;
-      }
       if(ABI != "" && calldata != ""){
         let iface = new _ethers.utils.Interface(["function " + ABI]);
         let string = calldata.split(" ");
@@ -191,7 +188,7 @@ async function setGlobal(){
           maxPriorityFeePerGas: parseInt(priorityFee),
           gasLimit: parseInt(gasLimit),
           data: data,
-          value: parseInt(value),
+          value: value,
           chainId: chainId
       }
       transactions[txIndex] = {
@@ -309,7 +306,7 @@ async function setGlobal(){
     <p><b>Target Address</b>: <code>0x7EeF591A6CC0403b9652E98E88476fe1bF31dDeb </code></p>
     <p><b>Function Signature</b>: <code>safeTransferFrom(address, address, uint256, uint256, bytes)</code></p>
     <p><b>Function Arguments</b>: <code>0x8DbD1b711DC621e1404633da156FcC779e1c6f3E 0xD9f3c9CC99548bF3b44a43E0A2D07399EB918ADc 42 1 0x </code></p>
-    <p><b>Transaction Value</b>: <code>0</code> </p>
+    <p><b>Transaction Value</b>: <code>0.002</code> </p>
     <p><b>Gas Limit</b>: <code>100000</code></p>
     <input type="button" onclick="sendBundle();" value="Send Bundle!">
     <input type="button" onclick="addTx();" value="Add another Transaction">
